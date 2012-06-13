@@ -25,12 +25,20 @@
 // THE SOFTWARE.
 using System;
 using Banshee.ServiceStack;
+using Banshee.Gui;
+using Gtk;
+using Mono.Unix;
 
 namespace Banshee.Renamer
 {
     public class RenamerService : IExtensionService
     {
         #region Fields
+        public ActionGroup menuActions;
+        public uint menuActionsUiId;
+        #endregion
+
+        #region Constants and Static Fields
         public const string Name = "Renamer";
         #endregion
 
@@ -40,21 +48,66 @@ namespace Banshee.Renamer
         }
         #endregion
 
-        #region IExtensionService Implementation
-        public string ServiceName
+        #region Static Private Helper Properties
+        private static InterfaceActionService BansheeActionService {
+            get {
+                return ServiceManager.Get<InterfaceActionService> ();
+            }
+        }
+        #endregion
+
+        #region Action Handlers
+        protected virtual void OnOpenMassRenamerAction(object source, EventArgs args)
         {
-            get
-            {
+            Console.WriteLine("Open mass renamer...");
+        }
+        #endregion
+
+        #region Interface Initialisation and Disposal
+        /// <summary>
+        /// Initialises the interface of Banshee. It inserts the `rename` menu item
+        /// in the `Tools` menu.
+        /// </summary>
+        private void InitializeUi ()
+        {
+            // Add the `Rename` menu item to the `Tools` menu.
+            menuActions = new ActionGroup ("Renamer");
+
+            menuActions.Add (new ActionEntry [] {
+                new ActionEntry ("OpenMassRenamerAction", null,
+                    Catalog.GetString ("_Rename..."), null,
+                    Catalog.GetString ("Rename selected files."), OnOpenMassRenamerAction)
+            });
+
+            BansheeActionService.UIManager.InsertActionGroup (menuActions, 0);
+            menuActionsUiId = BansheeActionService.UIManager.AddUiFromResource ("RenamerActionsUI.xml");
+        }
+
+        /// <summary>
+        /// Disposes of whatever the `InitializeUi` method did.
+        /// </summary>
+        private void DisposeUi ()
+        {
+            BansheeActionService.UIManager.RemoveUi (menuActionsUiId);
+            BansheeActionService.UIManager.RemoveActionGroup (menuActions);
+        }
+        #endregion
+
+        #region IExtensionService Implementation
+        public string ServiceName {
+            get {
                 return Name;
             }
         }
 
-        void IExtensionService.Initialize()
+        void IExtensionService.Initialize ()
         {
+            InitializeUi ();
         }
 
-        void IDisposable.Dispose()
+        void IDisposable.Dispose ()
         {
+            DisposeUi ();
         }
         #endregion
     }
