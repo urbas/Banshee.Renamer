@@ -57,9 +57,22 @@ namespace Banshee.Renamer
         #endregion
 
         #region Action Handlers
+        /// <summary>
+        /// This method is invoked when the user clicks on the `Tools -> Rename...`
+        /// menu item.
+        /// </summary>
+        /// <param name='source'>
+        /// The source of the click event (the menu item).
+        /// </param>
+        /// <param name='args'>
+        /// Event arguments...
+        /// </param>
         protected virtual void OnOpenMassRenamerAction(object source, EventArgs args)
         {
-            Console.WriteLine("Open mass renamer...");
+            Console.WriteLine("Currently registered services:");
+            foreach (var s in ServiceManager.RegisteredServices) {
+                Console.WriteLine(s.ServiceName);
+            }
         }
         #endregion
 
