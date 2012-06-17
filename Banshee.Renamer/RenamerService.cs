@@ -27,15 +27,19 @@ using System;
 using Banshee.ServiceStack;
 using Banshee.Gui;
 using Gtk;
+using Banshee.Sources;
+using Banshee.Collection.Database;
 using Mono.Unix;
+using Banshee.IO;
+using Banshee.Collection;
 
 namespace Banshee.Renamer
 {
     public class RenamerService : IExtensionService
     {
         #region Fields
-        public ActionGroup menuActions;
-        public uint menuActionsUiId;
+        private ActionGroup menuActions;
+        private uint menuActionsUiId;
         #endregion
 
         #region Constants and Static Fields
@@ -67,12 +71,83 @@ namespace Banshee.Renamer
         /// <param name='args'>
         /// Event arguments...
         /// </param>
-        protected virtual void OnOpenMassRenamerAction(object source, EventArgs args)
+        protected virtual void OnOpenMassRenamerAction (object source, EventArgs args)
         {
-            Console.WriteLine("Currently registered services:");
+            Console.WriteLine ("=========== Currently registered services: ===========");
             foreach (var s in ServiceManager.RegisteredServices) {
-                Console.WriteLine(s.ServiceName);
+                Console.WriteLine (s.ServiceName);
             }
+
+            Hyena.Log.Information("================ Traversing songs =================");
+            ForAllSongs(s => {
+                Hyena.Log.Information(string.Format("Song: {0}", s.Uri.AbsoluteUri));
+            },
+            s => {
+                Hyena.Log.Information(string.Format("Not the right type of song: {0}", s.DisplayTrackTitle));
+            });
+
+            //RenamerWindow window = new RenamerWindow ();
+            //window.ShowAll ();
+        }
+        #endregion
+
+        #region Song Selection Utility Methods
+        /// <summary>
+        /// Performs the given action on each song in the current user's selection in the current model.
+        /// </summary>
+        /// <param name='action'>
+        /// The action to be performed on each song in the current user's selection in the current model.
+        /// </param>
+        public static void ForAllSongs (Action<DatabaseTrackInfo> action, Action<TrackInfo> actionForNonDbTracks = null)
+        {
+            DatabaseTrackListModel model = null;
+            var selection = GetSongsSelection(out model);
+            if (selection != null) {
+                lock (model) {
+                    //int selectionCount = selection.RangeCollection.Count;
+                    //int songSelectionIndex = 0;
+                    foreach (var songModelIndex in selection.RangeCollection) {
+                        var trackInfo = model [songModelIndex] as DatabaseTrackInfo;
+                        if (trackInfo == null) {
+                            if (actionForNonDbTracks == null) {
+                                Hyena.Log.Information(string.Format(Catalog.GetString(@"Skipped the song '{0}' with selection index {1}."), model[songModelIndex].DisplayTrackTitle, songModelIndex));
+                            } else {
+                                actionForNonDbTracks(model[songModelIndex]);
+                            }
+                        } else {
+                            action(trackInfo);
+                        }
+                        //++songSelectionIndex;
+                    }
+                }
+            }
+        }
+
+        /// <summary>
+        /// Returns the database track list model which contains all the songs
+        /// listed in the current playlist.
+        /// </summary>
+        public static DatabaseTrackListModel GetSongsModel()
+        {
+            var activeSource = ServiceManager.SourceManager.ActiveSource as DatabaseSource;
+            if (activeSource == null) {
+                return null;
+            } else {
+                return activeSource.DatabaseTrackModel;
+            }
+        }
+
+        /// <summary>
+        /// Gets the user's selection of songs together with the model. The model contains the actual track infos while
+        /// the selection is a collection of indices of songs in the model that are selected.
+        /// </summary>
+        /// <param name='model'>
+        /// The model from which to extract the user's selection of songs.
+        /// </param>
+        public static Hyena.Collections.Selection GetSongsSelection(out DatabaseTrackListModel model)
+        {
+            model = GetSongsModel();
+            return model == null ? null : model.Selection;
         }
         #endregion
 

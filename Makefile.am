@@ -3,10 +3,15 @@ TARGET = library
 LINK = $(REF_EXTENSION_RENAMER)
 INSTALL_DIR = $(EXTENSIONS_INSTALL_DIR)
 
-SOURCES = Banshee.Renamer/RenamerService.cs
+SOURCES =  \
+	Banshee.Renamer/RenamerService.cs \
+	gtk-gui/Banshee.Renamer.RenamerWindow.cs \
+	gtk-gui/generated.cs \
+	RenamerWindow.cs
 
 RESOURCES =  \
 	Banshee.Renamer.addin.xml \
+	gtk-gui/gui.stetic \
 	Resources/RenamerActionsUI.xml
 
 include $(top_srcdir)/build/build.mk
