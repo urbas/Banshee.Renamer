@@ -32,6 +32,8 @@ using Banshee.Collection.Database;
 using Mono.Unix;
 using Banshee.IO;
 using Banshee.Collection;
+using Banshee.Configuration;
+using System.Text;
 
 namespace Banshee.Renamer
 {
@@ -78,16 +80,43 @@ namespace Banshee.Renamer
                 Console.WriteLine (s.ServiceName);
             }
 
+            SimplePatternCompiler sfc = new SimplePatternCompiler();
+            var pattern = sfc.CompilePattern(@"{something}}/some/\{}directories/{artist}/{album}/{track number} - {artist} - {album} - {title} Hurray!");
+
+            Func<DatabaseTrackInfo, string, string> parameterMap = (song, parameter) => {
+                switch (parameter) {
+                case "artist":
+                    return song.DisplayArtistName;
+                case "album":
+                    return song.DisplayAlbumTitle;
+                case "title":
+                    return song.DisplayTrackTitle;
+                case "track number":
+                    return song.TrackNumber.ToString();
+                default:
+                    return "Unknown Parameter";
+                }
+            };
+
             Hyena.Log.Information("================ Traversing songs =================");
+            StringBuilder sb = new StringBuilder();
             ForAllSongs(s => {
-                Hyena.Log.Information(string.Format("Song: {0}", s.Uri.AbsoluteUri));
+                sb.Clear();
+                pattern.CreateFilename(sb, s, parameterMap);
+                Hyena.Log.Information(sb.ToString());
+                //Hyena.Log.Information(string.Format("Song: {0}", s.Uri.AbsoluteUri));
             },
             s => {
                 Hyena.Log.Information(string.Format("Not the right type of song: {0}", s.DisplayTrackTitle));
             });
 
-            //RenamerWindow window = new RenamerWindow ();
-            //window.ShowAll ();
+            string str = ConfigurationClient.Get<string>(@"plugins/renamer", "stuff", "a lot of it!");
+            Hyena.Log.Information(str);
+            ConfigurationClient.Set<string>(@"plugins/renamer", "stuff", str + " It!");
+
+
+            RenamerWindow window = new RenamerWindow ();
+            window.ShowAll ();
         }
         #endregion
 

@@ -50,8 +50,14 @@
   <ItemGroup>
     <Compile Include="Banshee.Renamer\RenamerService.cs" />
     <Compile Include="gtk-gui\generated.cs" />
-    <Compile Include="RenamerWindow.cs" />
     <Compile Include="gtk-gui\Banshee.Renamer.RenamerWindow.cs" />
+    <Compile Include="Banshee.Renamer\PatternCompilationException.cs" />
+    <Compile Include="Banshee.Renamer\ICompiledFilenamePattern.cs" />
+    <Compile Include="Banshee.Renamer\SimplePattern.cs" />
+    <Compile Include="Banshee.Renamer\IFilenamePatternCompiler.cs" />
+    <Compile Include="Banshee.Renamer\FilenamePatterns.cs" />
+    <Compile Include="Banshee.Renamer\SimplePatternCompiler.cs" />
+    <Compile Include="Banshee.Renamer\RenamerWindow.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
