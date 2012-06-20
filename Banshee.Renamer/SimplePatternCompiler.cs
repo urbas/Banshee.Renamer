@@ -74,43 +74,6 @@ namespace Banshee.Renamer
         private List<SfcSegment> segments = new List<SfcSegment> ();
         #endregion
 
-        #region Regex Stuff (Static)
-        private const string ParameterStart = "[";
-        private const string ParameterStartRegex = @"\[";
-        private const string ParameterEnd = "]";
-        private const string ParameterEndRegex = @"\]";
-        private const string EscapedCharacters = ParameterStartRegex + ParameterEndRegex + @"\\";
-        private const string RegexStringEscapedSequences = @"\\[" + EscapedCharacters + "]";
-
-        /// <summary>
-        /// This regular expression matches parameters of the form "[...]", where the escape
-        /// character is '\'. See <see cref="EscapedCharacters"/> for a list
-        /// of escape sequences.
-        /// </summary>
-        private static readonly Regex ParameterMatcher = new Regex (
-        // The start of the parameter must be an unescaped '[' character.
-            @"(^|[^\\])" + ParameterStartRegex +
-        // Now collect the actual parameter (which can be any string that does not contain an unescaped ']').
-            @"(?<parameter>([^" + EscapedCharacters + "]|" + RegexStringEscapedSequences + @")*)" +
-            ParameterEndRegex,
-            RegexOptions.Compiled | RegexOptions.ExplicitCapture);
-
-        /// <summary>
-        /// This regex finds only valid escape sequences.
-        /// </summary>
-        private static readonly Regex ValidEscapeSequences = new Regex (RegexStringEscapedSequences, RegexOptions.Compiled | RegexOptions.ExplicitCapture);
-
-        /// <summary>
-        /// This regex finds only invalid escape sequences.
-        /// </summary>
-        private static readonly Regex InvalidEscapeSequences = new Regex (@"\\[^" + EscapedCharacters + "]", RegexOptions.Compiled | RegexOptions.ExplicitCapture);
-
-        /// <summary>
-        /// This regex finds valid as well as invalid escape sequences. I.e.: all strings of the form: '\[character]'.
-        /// </summary>
-        private static readonly Regex AllEscapeSequences = new Regex (@"\\.", RegexOptions.Compiled | RegexOptions.ExplicitCapture);
-        #endregion
-
         #region Constructors
         internal SfcPattern (string sourcePattern, SimplePatternCompiler owner) : base(sourcePattern, owner)
         {
@@ -128,80 +91,154 @@ namespace Banshee.Renamer
         }
         #endregion
 
-        #region Helper Methods (static)
+        #region Parsing and Compilation Methods (static)
+        private const char EscapeCharacter = '\\';
+        private const char ParamStartCharacter = '[';
+        private const char ParamEndCharacter = ']';
+
+        /// <summary>
+        /// Just collecting text...
+        /// </summary>
+        private static void processState0 (string sourcePattern, int index, StringBuilder sb, ref int state)
+        {
+            char curChar = sourcePattern [index];
+            switch (curChar) {
+            case EscapeCharacter:
+                state = 1;
+                break;
+            case ParamStartCharacter:
+                state = 2;
+                break;
+            default:
+                sb.Append (curChar);
+                break;
+            }
+        }
+
+        /// <summary>
+        /// The previous character was the escape character and we are in text collection mode.
+        /// </summary>
+        private static void processState1 (string sourcePattern, int index, StringBuilder sb, ref int state)
+        {
+            char curChar = sourcePattern [index];
+            switch (curChar) {
+            case EscapeCharacter:
+            case ParamStartCharacter:
+                sb.Append (curChar);
+                state = 0;
+                break;
+            default:
+                throw new PatternCompilationException (Catalog.GetString ("An illegal escape sequence."), sourcePattern, index);
+            }
+        }
+
+        /// <summary>
+        /// We are in a parameter!
+        /// </summary>
+        private static void processState2 (string sourcePattern, int index, StringBuilder sb, ref int state)
+        {
+            char curChar = sourcePattern [index];
+            switch (curChar) {
+            case EscapeCharacter:
+                state = 3;
+                break;
+            case ParamEndCharacter:
+                state = 0;
+                break;
+            default:
+                sb.Append (curChar);
+                break;
+            }
+        }
+
+        /// <summary>
+        /// The previous character was the escape character and we are in a parameter.
+        /// </summary>
+        private static void processState3 (string sourcePattern, int index, StringBuilder sb, ref int state)
+        {
+            char curChar = sourcePattern [index];
+            switch (curChar) {
+            case EscapeCharacter:
+            case ParamEndCharacter:
+                sb.Append (curChar);
+                state = 2;
+                break;
+            default:
+                throw new PatternCompilationException (Catalog.GetString ("An illegal escape sequence."), sourcePattern, index);
+            }
+        }
+
         /// <summary>
         /// Extracts the pattern segments (the compiled version of the `sourcePattern`).
+        /// This method uses a finite state automaton parser.
+        /// TODO: The same should be done for parameter parsing.
         /// </summary>
         private static List<SfcSegment> ExtractPatternSegments (string sourcePattern)
         {
-            CheckSyntax (sourcePattern);
-
             var segments = new List<SfcSegment> ();
 
-            // Parse the pattern string and extract all of its segments:
-            // TODO: Solve this without regular expressions (do a linear scan).
-            var matcher = ParameterMatcher.Match (sourcePattern);
-            // The index of the character right after the last found parameter:
-            int nonParameterIndex = 0;
-            while (matcher.Success) {
+            // If the source pattern is empty, don't do anything...
+            if (string.IsNullOrEmpty (sourcePattern)) {
+                return segments;
+            }
 
-                var parameter = matcher.Groups [1];
-                // Is there some text between the start of this parameter and the last index?
-                // parameter.Index is the index of the character right after '[', this is why we look at 'parameter.Index'.
-                if (nonParameterIndex < parameter.Index - 1) {
-                    // Yes, there is some text. Add it as a segment:
-                    segments.Add (CreateLiteralSegment (sourcePattern, nonParameterIndex, sourcePattern.Substring (nonParameterIndex, parameter.Index - nonParameterIndex - 1)));
+            // Start consuming characters:
+            int patternLength = sourcePattern.Length;
+            StringBuilder sb = new StringBuilder (patternLength);
+            int state = 0;
+            int textStartIndex = 0;
+            for (int curIndex = 0; curIndex < patternLength; curIndex++) {
+                switch (state) {
+                case 0: // We are accepting text...
+                    processState0 (sourcePattern, curIndex, sb, ref state);
+                    if (state == 2) {
+                        // We have transitioned to a parameter. Put the text segment in:
+                        if (sb.Length > 0) {
+                            segments.Add (CreateLiteralSegment (sourcePattern, textStartIndex, sb.ToString ()));
+                            sb.Clear ();
+                        }
+                        // Take a not of where the parameter started
+                        textStartIndex = curIndex;
+                    }
+                    break;
+                case 1: // We are accepting text and the previous character was an escape character!
+                    processState1 (sourcePattern, curIndex, sb, ref state);
+                    break;
+                case 2: // We are in a parameter...
+                    processState2 (sourcePattern, curIndex, sb, ref state);
+                    if (state == 0) {
+                        // We have transitioned back to text again. Put the parameter segment in:
+                        segments.Add (CreateParameterSegment (sourcePattern, textStartIndex, sb.ToString ()));
+                        sb.Clear ();
+                        textStartIndex = curIndex + 1;
+                    }
+                    break;
+                case 3: // We are in a parameter and the previous character was an escape character!
+                    processState3 (sourcePattern, curIndex, sb, ref state);
+                    break;
                 }
-                nonParameterIndex = matcher.Index + matcher.Length;
-                // Now add the parameter:
-                segments.Add (CreateParameterSegment (sourcePattern, parameter.Index - 1, parameter.Value));
-                matcher = matcher.NextMatch ();
             }
 
-            if (nonParameterIndex < sourcePattern.Length) {
-                segments.Add (CreateLiteralSegment (sourcePattern, nonParameterIndex, sourcePattern.Substring (nonParameterIndex)));
+            // We have come to the end. Act according to which state we were last in:
+            switch (state) {
+            case 0: // We were collecting text. Just add whatever is in the SB...
+                if (sb.Length > 0) {
+                    segments.Add (CreateLiteralSegment (sourcePattern, textStartIndex, sb.ToString ()));
+                }
+                break;
+            case 1:
+            case 3:
+                throw new PatternCompilationException (Catalog.GetString ("The pattern contains a dangling escape sequence."), sourcePattern, patternLength);
+            default:
+                throw new PatternCompilationException (Catalog.GetString ("The parameter was opened but never closed."), sourcePattern, textStartIndex + 1);
             }
 
-            // Go through all segments and compile them completely:
+            // All the segments have been collected. We only have to compile them now...
             for (int i = segments.Count - 1; i >= 0; --i) {
-                segments [i].Compile ();
+                segments[i].Compile();
             }
 
             return segments;
-        }
-
-        /// <summary>
-        /// Checks the syntax of the raw pattern (as typed by the user)
-        /// and throws a <see cref="PatternCompilationException"/> with
-        /// additional information if the pattern has wrong escape sequences
-        /// anywhere.
-        /// </summary>
-        public static void CheckSyntax (string rawPattern)
-        {
-            if (rawPattern == null) {
-                throw new PatternCompilationException (Catalog.GetString ("The given pattern is 'null'. This pattern compiler cannot work with null patterns."));
-            }
-
-            // Go through all escape sequences and check that they are correct:
-            //  1.) There may not be any invalid escape sequences:
-            var m = AllEscapeSequences.Match (rawPattern);
-            while (m.Success) {
-                if (InvalidEscapeSequences.IsMatch (m.Value)) {
-                    throw new PatternCompilationException (string.Format (Catalog.GetString ("The pattern contains an invalid escape sequence '{0}'."), m.Value), rawPattern, m.Index + 1);
-                }
-                m = AllEscapeSequences.Match (rawPattern, m.Index + m.Length);
-            }
-        }
-
-        /// <summary>
-        /// Unescapes the pattern source string.
-        /// </summary>
-        public static string UnescapeString (string escaped)
-        {
-            string unescaped = ValidEscapeSequences.Replace (escaped, m => {
-                return m.Value [1].ToString ();
-            });
-            return unescaped;
         }
         #endregion
 
@@ -237,8 +274,7 @@ namespace Banshee.Renamer
         {
             IndexInSource = indexInSource;
             SourcePattern = sourcePattern;
-            RawContent = content;
-            RawContentUnescaped = SfcPattern.UnescapeString (content);
+            Content = content;
         }
         #endregion
 
@@ -247,19 +283,22 @@ namespace Banshee.Renamer
 
         public string SourcePattern { get; private set; }
 
-        public string RawContent { get; private set; }
-
-        public string RawContentUnescaped { get; private set; }
+        public string Content { get; private set; }
         #endregion
 
         #region Customisable Behaviour
         public virtual string ToString (DatabaseTrackInfo song, Func<DatabaseTrackInfo, string, object> parameterMap)
         {
-            return RawContentUnescaped;
+            return Content;
         }
 
         internal virtual void Compile ()
         {
+        }
+
+        public override string ToString ()
+        {
+            return Content;
         }
         #endregion
     }
@@ -281,7 +320,12 @@ namespace Banshee.Renamer
 
         public override string ToString (DatabaseTrackInfo song, Func<DatabaseTrackInfo, string, object> parameterMap)
         {
-            return (parameterMap (song, RawContentUnescaped) ?? "").ToString ();
+            return (parameterMap (song, Content) ?? "").ToString ();
+        }
+
+        public override string ToString ()
+        {
+            return "[" + Content + "]";
         }
     }
 
@@ -318,13 +362,13 @@ namespace Banshee.Renamer
 
         internal override void Compile ()
         {
-            if (!RawContentUnescaped.StartsWith (Header) || RawContentUnescaped.LastIndexOf (DelimiterEnd) < Header.Length) {
+            if (!Content.StartsWith (Header) || Content.LastIndexOf (DelimiterEnd) < Header.Length) {
                 throw new PatternCompilationException (string.Format (Catalog.GetString ("This 'S-type' format parameter has an invalid syntax. Expected syntax: {0}"), SyntaxOutline), SourcePattern, IndexInSource);
             }
 
             string formatPart;
             string parameters;
-            if (!SfcFormattedParameter.ExtractFormatAndParameters(DelimiterStart, DelimiterEnd, RawContentUnescaped, out formatPart, out parameters)) {
+            if (!SfcFormattedParameter.ExtractFormatAndParameters (DelimiterStart, DelimiterEnd, Content, out formatPart, out parameters)) {
                 throw new PatternCompilationException (string.Format (Catalog.GetString ("This 'S-type' format parameter has an invalid syntax. Expected syntax: {0}"), SyntaxOutline), SourcePattern, IndexInSource);
             }
 
@@ -361,16 +405,22 @@ namespace Banshee.Renamer
             return string.Format (Format, parameterMap (song, ParameterName));
         }
 
+        public override string ToString ()
+        {
+            return "[S<" + Format + ">" + ParameterName + "]";
+        }
+
         /// <summary>
         /// Extracts the format and parameters if the string is of the following format:
         ///     HEADER'startDelimiter'format'endDelimiter'parameters
         /// </summary>
-        public static bool ExtractFormatAndParameters(char startDelimiter, char endDelimiter, string content, out string format, out string parameters) {
-            int idxFormatEnd = content.LastIndexOf(endDelimiter);
-            int idxFormatStart = content.IndexOf(startDelimiter);
+        public static bool ExtractFormatAndParameters (char startDelimiter, char endDelimiter, string content, out string format, out string parameters)
+        {
+            int idxFormatEnd = content.LastIndexOf (endDelimiter);
+            int idxFormatStart = content.IndexOf (startDelimiter);
             if (idxFormatEnd > idxFormatStart) {
-                format = content.Substring(idxFormatStart + 1, idxFormatEnd - idxFormatStart - 1);
-                parameters = content.Substring(idxFormatEnd + 1);
+                format = content.Substring (idxFormatStart + 1, idxFormatEnd - idxFormatStart - 1);
+                parameters = content.Substring (idxFormatEnd + 1);
                 return true;
             } else {
                 format = null;
@@ -406,13 +456,15 @@ namespace Banshee.Renamer
 
         public string Format { get; private set; }
 
+        public string ParametersString { get; private set; }
+
         public string[] Parameters { get; private set; }
 
         internal override void Compile ()
         {
-            if (RawContentUnescaped.StartsWith (Header1)) {
+            if (Content.StartsWith (Header1)) {
                 IsConditional = false;
-            } else if (RawContentUnescaped.StartsWith (Header2)) {
+            } else if (Content.StartsWith (Header2)) {
                 IsConditional = true;
             } else {
                 throw new PatternCompilationException (string.Format (Catalog.GetString ("This 'F-type' format parameter has an invalid syntax. Expected syntax: {0}"), SyntaxOutline), SourcePattern, IndexInSource);
@@ -420,11 +472,12 @@ namespace Banshee.Renamer
 
             string format;
             string parameters;
-            if (!SfcFormattedParameter.ExtractFormatAndParameters(DelimiterStart, DelimiterEnd, RawContentUnescaped, out format, out parameters)) {
+            if (!SfcFormattedParameter.ExtractFormatAndParameters (DelimiterStart, DelimiterEnd, Content, out format, out parameters)) {
                 throw new PatternCompilationException (string.Format (Catalog.GetString ("This 'F-type' format parameter has an invalid syntax. Expected syntax: {0}"), SyntaxOutline), SourcePattern, IndexInSource);
             }
             // Extract the format string:
             Format = format;
+            ParametersString = parameters;
             // Now extract the parameter names (delimited with commas).
             Parameters = parameters.Split (ParameterDelimiter, StringSplitOptions.RemoveEmptyEntries);
 
@@ -455,6 +508,15 @@ namespace Banshee.Renamer
                 values [i] = parameterMap (song, Parameters [i]);
             }
             return string.Format (Format, values);
+        }
+
+        public override string ToString ()
+        {
+            if (IsConditional) {
+                return "[FC<" + Format + ">" + ParametersString + "]";
+            } else {
+                return "[F<" + Format + ">" + ParametersString + "]";
+            }
         }
     }
     #endregion

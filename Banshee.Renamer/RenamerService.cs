@@ -84,7 +84,7 @@ namespace Banshee.Renamer
             SimplePatternCompiler sfc = new SimplePatternCompiler ();
 
             try {
-                var pattern = sfc.CompilePattern (@"[S<00>track number] - [artist] - [album] - [title] - [unknown][FC< - {0:00} - {1} - {2}>track number,album,title]");
+                var pattern = sfc.CompilePattern (@"[FC<{0:00} - >track number][artist] - [album] - [title]\\");
 
                 Func<DatabaseTrackInfo, string, object> parameterMap = (song, parameter) => {
                     switch (parameter) {
