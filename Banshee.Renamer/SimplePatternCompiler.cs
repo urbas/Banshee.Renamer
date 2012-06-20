@@ -77,7 +77,7 @@ namespace Banshee.Renamer
 
         /// <summary>
         /// This regular expression matches parameters of the form "{...}", where the escape
-        /// character is '\'. See <see cref="UnescapeString(string)"/> for a list
+        /// character is '\'. See <see cref="EscapedCharacters"/> for a list
         /// of escape sequences.
         /// </summary>
         private static readonly Regex ParameterMatcher = new Regex (
@@ -145,16 +145,16 @@ namespace Banshee.Renamer
                 // parameter.Index is the index of the character right after '{', this is why we look at 'parameter.Index'.
                 if (nonParameterIndex < parameter.Index - 1) {
                     // Yes, there is some text. Add it as a segment:
-                    segments.Add (SFCText.CreateLiteralSegment (sourcePattern, sourcePattern.Substring (nonParameterIndex, parameter.Index - nonParameterIndex - 1), nonParameterIndex));
+                    segments.Add (CreateLiteralSegment (sourcePattern, sourcePattern.Substring (nonParameterIndex, parameter.Index - nonParameterIndex - 1), nonParameterIndex));
                 }
                 nonParameterIndex = matcher.Index + matcher.Length;
                 // Now add the parameter:
-                segments.Add (SFCText.CreateParameterSegment (sourcePattern, parameter.Value, parameter.Index - 1));
+                segments.Add (CreateParameterSegment (sourcePattern, parameter.Value, parameter.Index - 1));
                 matcher = matcher.NextMatch ();
             }
 
             if (nonParameterIndex < sourcePattern.Length) {
-                segments.Add (SFCText.CreateLiteralSegment (sourcePattern, sourcePattern.Substring (nonParameterIndex), nonParameterIndex));
+                segments.Add (CreateLiteralSegment (sourcePattern, sourcePattern.Substring (nonParameterIndex), nonParameterIndex));
             }
 
             // Go through all segments and compile them completely:
@@ -189,9 +189,7 @@ namespace Banshee.Renamer
         }
 
         /// <summary>
-        /// Unescapes the pattern source string. Currently known escape sequences are:
-        ///     1.) "\\"
-        ///     2.) "\{"
+        /// Unescapes the pattern source string.
         /// </summary>
         public static string UnescapeString (string escaped)
         {
@@ -201,8 +199,30 @@ namespace Banshee.Renamer
             return unescaped;
         }
         #endregion
+
+        #region Factory Methods
+        public static SFCText CreateLiteralSegment(string sourcePattern, string content, int indexInSource) {
+            return new SFCText(sourcePattern, content, indexInSource);
+        }
+
+        /// <summary>
+        /// Creates the parameter segment.
+        /// </summary>
+        /// <param name='content'>
+        /// This should be the unescaped content of the parameter notation. E.g.: '{[content]}', without the '{' and '}' characters.
+        /// Depending on the `content`, this method chooses a specific parameter segment.
+        /// For example, if the content starts with 'Format|' (e.g.: '{Format|[.NET format string without the index]|[parameter name]}') then this method
+        /// will create and return an SFCFormattedParameter.
+        /// </param>
+        public static SFCText CreateParameterSegment(string sourcePattern, string content, int indexInSource) {
+            if (content.StartsWith(SFCFormattedParameter.Header))
+                return new SFCFormattedParameter(sourcePattern, content, indexInSource);
+            return new SFCParameter(sourcePattern, content, indexInSource);
+        }
+        #endregion
     }
 
+    #region Segments
     internal class SFCText
     {
         #region Constructor
@@ -232,27 +252,6 @@ namespace Banshee.Renamer
         }
 
         internal virtual void Compile() {
-        }
-        #endregion
-
-        #region Factory Methods
-        public static SFCText CreateLiteralSegment(string sourcePattern, string content, int indexInSource) {
-            return new SFCText(sourcePattern, content, indexInSource);
-        }
-
-        /// <summary>
-        /// Creates the parameter segment.
-        /// </summary>
-        /// <param name='content'>
-        /// This should be the unescaped content of the parameter notation. E.g.: '{[content]}', without the '{' and '}' characters.
-        /// Depending on the `content`, this method chooses a specific parameter segment.
-        /// For example, if the content starts with 'Format|' (e.g.: '{Format|[.NET format string without the index]|[parameter name]}') then this method
-        /// will create and return an SFCFormattedParameter.
-        /// </param>
-        public static SFCText CreateParameterSegment(string sourcePattern, string content, int indexInSource) {
-            if (content.StartsWith(SFCFormattedParameter.Header))
-                return new SFCFormattedParameter(sourcePattern, content, indexInSource);
-            return new SFCParameter(sourcePattern, content, indexInSource);
         }
         #endregion
     }
@@ -338,5 +337,6 @@ namespace Banshee.Renamer
             return string.Format(Format, parameterMap(song, ParameterName));
         }
     }
+    #endregion
 }
 
