@@ -84,7 +84,7 @@ namespace Banshee.Renamer
             SimplePatternCompiler sfc = new SimplePatternCompiler ();
 
             try {
-                var pattern = sfc.CompilePattern (@"{Format|00|track number} - {artist} - {album} - {title}");
+                var pattern = sfc.CompilePattern (@"{Format|00|track number} - {artist} - {album} - {title} - {unknown} - {Format||unknown}");
 
                 Func<DatabaseTrackInfo, string, object> parameterMap = (song, parameter) => {
                     switch (parameter) {
@@ -95,9 +95,9 @@ namespace Banshee.Renamer
                     case "title":
                         return song.DisplayTrackTitle;
                     case "track number":
-                        return song.TrackNumber;
+                        return song.TrackNumber > 0 ? (object)song.TrackNumber : null;
                     default:
-                        return "[UNKNOWN PARAMETER:" + parameter + "]";
+                        return null;
                     }
                 };
 

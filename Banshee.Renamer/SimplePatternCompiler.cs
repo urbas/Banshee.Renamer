@@ -33,6 +33,7 @@ using System.Text;
 
 namespace Banshee.Renamer
 {
+    #region Compiler
     /// <summary>
     /// A simple `filename creator` implementation.
     ///
@@ -59,7 +60,9 @@ namespace Banshee.Renamer
             }
         }
     }
+    #endregion
 
+    #region Compiled Pattern
     /// <summary>
     /// This class contains the main part of the filename generation
     /// and pattern parsing and compilation.
@@ -72,7 +75,7 @@ namespace Banshee.Renamer
         #endregion
 
         #region Regex Stuff (Static)
-        private const string EscapedCharacters = @"\{\}\\";
+        private const string EscapedCharacters = @"\{\}\\<>";
         private const string RegexStringEscapedSequences = @"\\[" + EscapedCharacters + "]";
 
         /// <summary>
@@ -221,6 +224,7 @@ namespace Banshee.Renamer
         }
         #endregion
     }
+    #endregion
 
     #region Segments
     internal class SFCText
@@ -273,7 +277,7 @@ namespace Banshee.Renamer
 
         public override string ToString (DatabaseTrackInfo song, Func<DatabaseTrackInfo, string, object> parameterMap)
         {
-            return parameterMap (song, RawContentUnescaped).ToString();
+            return (parameterMap (song, RawContentUnescaped) ?? "").ToString();
         }
     }
 
@@ -337,6 +341,11 @@ namespace Banshee.Renamer
             return string.Format(Format, parameterMap(song, ParameterName));
         }
     }
+
+    // TODO: Add a `conditional formatted parameter` {Conditional<Full .NET format string>parameter name}. Example:
+    // {Conditional< - {0:00}>track number}
+    // Which doesn't print anything if the value of the parameter is 'null'. Note that an unknown track number returns null.
+
     #endregion
 }
 
