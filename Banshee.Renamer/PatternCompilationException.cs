@@ -38,20 +38,55 @@ namespace Banshee.Renamer
         /// <summary>
         /// Initializes a new instance of the <see cref="Banshee.Renamer.PatternCompilationException"/> class.
         /// </summary>
-        /// <param name='message'>
+        /// <param name="message">
         /// A human-readable and informative message as to why the pattern compilation failed.
         /// </param>
-        /// <param name='cause'>
+        /// <param name="rawPattern">
+        /// The pattern that is the object of this exception.
+        /// </param>
+        /// <param name="position">
+        /// The character position in the `RawPattern` relevant to this exception.
+        /// </param>
+        /// <param name="cause">
         /// [Optional] The inner exception that may have caused this exception.
         /// </param>
-        /// <exception cref='Exception'>
-        /// Thrown if the message is <c>null</c> or empty.
-        /// </exception>
-        public PatternCompilationException (string message, Exception cause = null)
+        public PatternCompilationException (string message, string rawPattern = null, int position = -1, Exception cause = null)
             : base(message, cause)
         {
             if (string.IsNullOrEmpty (message)) {
                 throw new Exception (Catalog.GetString ("A non-empty and informative pattern compilation error message must be provided."));
+            }
+            RawPattern = rawPattern;
+            Position = position;
+        }
+
+        /// <summary>
+        /// The character position in the `RawPattern` relevant to this exception. May be <c>null</c>.
+        /// </summary>
+        public readonly int Position;
+
+        /// <summary>
+        /// The pattern that is the object of this exception. May be <c>-1</c> to indicate that the position is unknown.
+        /// </summary>
+        public readonly string RawPattern;
+
+        public override string Message {
+            get {
+                if (RawPattern == null) {
+                    // The message format in case the RawPattern is not provided:
+                    if (Position >= 0) {
+                        return string.Format(Catalog.GetString("Compilation error at character {1}: {0}"), base.Message, Position);
+                    } else {
+                        return base.Message;
+                    }
+                } else {
+                    // The raw pattern is provided. Print it out:
+                    if (Position >= 0) {
+                        return string.Format(Catalog.GetString("Compilation error in pattern '{1}' at character {2}: {0}"), base.Message, RawPattern, Position);
+                    } else {
+                        return string.Format(Catalog.GetString("Compilation error in pattern '{1}': {0}"), base.Message, RawPattern);
+                    }
+                }
             }
         }
     }

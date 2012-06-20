@@ -52,7 +52,7 @@ namespace Banshee.Renamer
         /// a string for the object and the given parameter (the parameters appear in the pattern).
         /// This method will be called a lot of times (and quite possibly from multiple threads).
         /// </summary>
-        void CreateFilename(StringBuilder output, DatabaseTrackInfo song, Func<DatabaseTrackInfo, string, string> parameterMap);
+        void CreateFilename(StringBuilder output, DatabaseTrackInfo song, Func<DatabaseTrackInfo, string, object> parameterMap);
 
     }
 }

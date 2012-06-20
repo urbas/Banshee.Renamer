@@ -34,6 +34,7 @@ using Banshee.IO;
 using Banshee.Collection;
 using Banshee.Configuration;
 using System.Text;
+using Hyena;
 
 namespace Banshee.Renamer
 {
@@ -80,39 +81,44 @@ namespace Banshee.Renamer
                 Console.WriteLine (s.ServiceName);
             }
 
-            SimplePatternCompiler sfc = new SimplePatternCompiler();
-            var pattern = sfc.CompilePattern(@"{something}}/some/\{}directories/{artist}/{album}/{track number} - {artist} - {album} - {title} Hurray!");
+            SimplePatternCompiler sfc = new SimplePatternCompiler ();
 
-            Func<DatabaseTrackInfo, string, string> parameterMap = (song, parameter) => {
-                switch (parameter) {
-                case "artist":
-                    return song.DisplayArtistName;
-                case "album":
-                    return song.DisplayAlbumTitle;
-                case "title":
-                    return song.DisplayTrackTitle;
-                case "track number":
-                    return song.TrackNumber.ToString();
-                default:
-                    return "Unknown Parameter";
-                }
-            };
+            try {
+                var pattern = sfc.CompilePattern (@"{Format|00|track number} - {artist} - {album} - {title}");
 
-            Hyena.Log.Information("================ Traversing songs =================");
-            StringBuilder sb = new StringBuilder();
-            ForAllSongs(s => {
-                sb.Clear();
-                pattern.CreateFilename(sb, s, parameterMap);
-                Hyena.Log.Information(sb.ToString());
-                //Hyena.Log.Information(string.Format("Song: {0}", s.Uri.AbsoluteUri));
-            },
-            s => {
-                Hyena.Log.Information(string.Format("Not the right type of song: {0}", s.DisplayTrackTitle));
-            });
+                Func<DatabaseTrackInfo, string, object> parameterMap = (song, parameter) => {
+                    switch (parameter) {
+                    case "artist":
+                        return song.DisplayArtistName;
+                    case "album":
+                        return song.DisplayAlbumTitle;
+                    case "title":
+                        return song.DisplayTrackTitle;
+                    case "track number":
+                        return song.TrackNumber;
+                    default:
+                        return "[UNKNOWN PARAMETER:" + parameter + "]";
+                    }
+                };
 
-            string str = ConfigurationClient.Get<string>(@"plugins/renamer", "stuff", "a lot of it!");
-            Hyena.Log.Information(str);
-            ConfigurationClient.Set<string>(@"plugins/renamer", "stuff", str + " It!");
+                Hyena.Log.Information ("================ Traversing songs =================");
+                StringBuilder sb = new StringBuilder ();
+                ForAllSongs (s => {
+                    sb.Clear ();
+                    pattern.CreateFilename (sb, s, parameterMap);
+                    Hyena.Log.Information (sb.ToString ());
+                    //Hyena.Log.Information(string.Format("Song: {0}", s.Uri.AbsoluteUri));
+                },
+                s => {
+                    Hyena.Log.Information (string.Format ("Not the right type of song: {0}", s.DisplayTrackTitle));
+                });
+            } catch (PatternCompilationException pcex) {
+                Log.Error (pcex.Message);
+            }
+
+            string str = ConfigurationClient.Get<string> (@"plugins.renamer", "stuff", "a lot of it!");
+            Hyena.Log.Information (str);
+            ConfigurationClient.Set<string> (@"plugins.renamer", "stuff", str + " It!");
 
 
             RenamerWindow window = new RenamerWindow ();
@@ -130,7 +136,7 @@ namespace Banshee.Renamer
         public static void ForAllSongs (Action<DatabaseTrackInfo> action, Action<TrackInfo> actionForNonDbTracks = null)
         {
             DatabaseTrackListModel model = null;
-            var selection = GetSongsSelection(out model);
+            var selection = GetSongsSelection (out model);
             if (selection != null) {
                 lock (model) {
                     //int selectionCount = selection.RangeCollection.Count;
@@ -139,12 +145,12 @@ namespace Banshee.Renamer
                         var trackInfo = model [songModelIndex] as DatabaseTrackInfo;
                         if (trackInfo == null) {
                             if (actionForNonDbTracks == null) {
-                                Hyena.Log.Information(string.Format(Catalog.GetString(@"Skipped the song '{0}' with selection index {1}."), model[songModelIndex].DisplayTrackTitle, songModelIndex));
+                                Hyena.Log.Information (string.Format (Catalog.GetString (@"Skipped the song '{0}' with selection index {1}."), model [songModelIndex].DisplayTrackTitle, songModelIndex));
                             } else {
-                                actionForNonDbTracks(model[songModelIndex]);
+                                actionForNonDbTracks (model [songModelIndex]);
                             }
                         } else {
-                            action(trackInfo);
+                            action (trackInfo);
                         }
                         //++songSelectionIndex;
                     }
@@ -156,7 +162,7 @@ namespace Banshee.Renamer
         /// Returns the database track list model which contains all the songs
         /// listed in the current playlist.
         /// </summary>
-        public static DatabaseTrackListModel GetSongsModel()
+        public static DatabaseTrackListModel GetSongsModel ()
         {
             var activeSource = ServiceManager.SourceManager.ActiveSource as DatabaseSource;
             if (activeSource == null) {
@@ -173,9 +179,9 @@ namespace Banshee.Renamer
         /// <param name='model'>
         /// The model from which to extract the user's selection of songs.
         /// </param>
-        public static Hyena.Collections.Selection GetSongsSelection(out DatabaseTrackListModel model)
+        public static Hyena.Collections.Selection GetSongsSelection (out DatabaseTrackListModel model)
         {
-            model = GetSongsModel();
+            model = GetSongsModel ();
             return model == null ? null : model.Selection;
         }
         #endregion

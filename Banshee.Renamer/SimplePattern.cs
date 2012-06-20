@@ -49,7 +49,7 @@ namespace Banshee.Renamer
             private set;
         }
 
-        public abstract void CreateFilename (System.Text.StringBuilder output, Banshee.Collection.Database.DatabaseTrackInfo song, Func<Banshee.Collection.Database.DatabaseTrackInfo, string, string> parameterMap);
+        public abstract void CreateFilename (System.Text.StringBuilder output, Banshee.Collection.Database.DatabaseTrackInfo song, Func<Banshee.Collection.Database.DatabaseTrackInfo, string, object> parameterMap);
     }
 }
 
