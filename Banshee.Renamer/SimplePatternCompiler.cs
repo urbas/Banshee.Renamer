@@ -50,7 +50,7 @@ namespace Banshee.Renamer
 
         public ICompiledFilenamePattern CompilePattern (string pattern)
         {
-            SFCPattern compiledPattern = new SFCPattern (pattern, this);
+            SfcPattern compiledPattern = new SfcPattern (pattern, this);
             return compiledPattern;
         }
 
@@ -66,32 +66,33 @@ namespace Banshee.Renamer
     /// <summary>
     /// This class contains the main part of the filename generation
     /// and pattern parsing and compilation.
-    /// SFC stands for 'simple filename creator'.
+    /// Sfc stands for 'simple filename creator'.
     /// </summary>
-    internal sealed class SFCPattern : SimplePattern
+    internal sealed class SfcPattern : SimplePattern
     {
         #region Private Compiled State (instance)
-        private List<SFCText> segments = new List<SFCText> ();
+        private List<SfcSegment> segments = new List<SfcSegment> ();
         #endregion
 
         #region Regex Stuff (Static)
-        private const string EscapedCharacters = @"\{\}\\<>";
+        private const string ParameterStart = "[";
+        private const string ParameterStartRegex = @"\[";
+        private const string ParameterEnd = "]";
+        private const string ParameterEndRegex = @"\]";
+        private const string EscapedCharacters = ParameterStartRegex + ParameterEndRegex + @"\\";
         private const string RegexStringEscapedSequences = @"\\[" + EscapedCharacters + "]";
 
         /// <summary>
-        /// This regular expression matches parameters of the form "{...}", where the escape
+        /// This regular expression matches parameters of the form "[...]", where the escape
         /// character is '\'. See <see cref="EscapedCharacters"/> for a list
         /// of escape sequences.
         /// </summary>
         private static readonly Regex ParameterMatcher = new Regex (
-        // The start of the parameter must be an unescaped '{' character.
-            @"(^|[^\\])\{" +
-        // Now collect the actual parameter (which can be any string that does not contain an unescaped '}').
-            @"(?<parameter>([^" +
-            EscapedCharacters +
-            "]|" +
-            RegexStringEscapedSequences +
-            @")*)\}",
+        // The start of the parameter must be an unescaped '[' character.
+            @"(^|[^\\])" + ParameterStartRegex +
+        // Now collect the actual parameter (which can be any string that does not contain an unescaped ']').
+            @"(?<parameter>([^" + EscapedCharacters + "]|" + RegexStringEscapedSequences + @")*)" +
+            ParameterEndRegex,
             RegexOptions.Compiled | RegexOptions.ExplicitCapture);
 
         /// <summary>
@@ -111,7 +112,7 @@ namespace Banshee.Renamer
         #endregion
 
         #region Constructors
-        internal SFCPattern (string sourcePattern, SimplePatternCompiler owner) : base(sourcePattern, owner)
+        internal SfcPattern (string sourcePattern, SimplePatternCompiler owner) : base(sourcePattern, owner)
         {
             segments = ExtractPatternSegments (sourcePattern);
         }
@@ -131,13 +132,14 @@ namespace Banshee.Renamer
         /// <summary>
         /// Extracts the pattern segments (the compiled version of the `sourcePattern`).
         /// </summary>
-        private static List<SFCText> ExtractPatternSegments (string sourcePattern)
+        private static List<SfcSegment> ExtractPatternSegments (string sourcePattern)
         {
             CheckSyntax (sourcePattern);
 
-            var segments = new List<SFCText> ();
+            var segments = new List<SfcSegment> ();
 
             // Parse the pattern string and extract all of its segments:
+            // TODO: Solve this without regular expressions (do a linear scan).
             var matcher = ParameterMatcher.Match (sourcePattern);
             // The index of the character right after the last found parameter:
             int nonParameterIndex = 0;
@@ -145,24 +147,24 @@ namespace Banshee.Renamer
 
                 var parameter = matcher.Groups [1];
                 // Is there some text between the start of this parameter and the last index?
-                // parameter.Index is the index of the character right after '{', this is why we look at 'parameter.Index'.
+                // parameter.Index is the index of the character right after '[', this is why we look at 'parameter.Index'.
                 if (nonParameterIndex < parameter.Index - 1) {
                     // Yes, there is some text. Add it as a segment:
-                    segments.Add (CreateLiteralSegment (sourcePattern, sourcePattern.Substring (nonParameterIndex, parameter.Index - nonParameterIndex - 1), nonParameterIndex));
+                    segments.Add (CreateLiteralSegment (sourcePattern, nonParameterIndex, sourcePattern.Substring (nonParameterIndex, parameter.Index - nonParameterIndex - 1)));
                 }
                 nonParameterIndex = matcher.Index + matcher.Length;
                 // Now add the parameter:
-                segments.Add (CreateParameterSegment (sourcePattern, parameter.Value, parameter.Index - 1));
+                segments.Add (CreateParameterSegment (sourcePattern, parameter.Index - 1, parameter.Value));
                 matcher = matcher.NextMatch ();
             }
 
             if (nonParameterIndex < sourcePattern.Length) {
-                segments.Add (CreateLiteralSegment (sourcePattern, sourcePattern.Substring (nonParameterIndex), nonParameterIndex));
+                segments.Add (CreateLiteralSegment (sourcePattern, nonParameterIndex, sourcePattern.Substring (nonParameterIndex)));
             }
 
             // Go through all segments and compile them completely:
             for (int i = segments.Count - 1; i >= 0; --i) {
-                segments[i].Compile();
+                segments [i].Compile ();
             }
 
             return segments;
@@ -204,38 +206,39 @@ namespace Banshee.Renamer
         #endregion
 
         #region Factory Methods
-        public static SFCText CreateLiteralSegment(string sourcePattern, string content, int indexInSource) {
-            return new SFCText(sourcePattern, content, indexInSource);
+        public static SfcSegment CreateLiteralSegment (string sourcePattern, int indexInSource, string content)
+        {
+            return new SfcSegment (sourcePattern, indexInSource, content);
         }
 
         /// <summary>
         /// Creates the parameter segment.
         /// </summary>
         /// <param name='content'>
-        /// This should be the unescaped content of the parameter notation. E.g.: '{[content]}', without the '{' and '}' characters.
-        /// Depending on the `content`, this method chooses a specific parameter segment.
-        /// For example, if the content starts with 'Format|' (e.g.: '{Format|[.NET format string without the index]|[parameter name]}') then this method
-        /// will create and return an SFCFormattedParameter.
+        /// This should be the unescaped content of the parameter notation. E.g.: '[parameter content]'.
+        /// Depending on the `parameter content`, this method chooses a specific parameter segment.
+        /// For example, if the content starts with 'S<' then this method will create and return an SfcFormattedParameter.
         /// </param>
-        public static SFCText CreateParameterSegment(string sourcePattern, string content, int indexInSource) {
-            if (content.StartsWith(SFCFormattedParameter.Header))
-                return new SFCFormattedParameter(sourcePattern, content, indexInSource);
-            return new SFCParameter(sourcePattern, content, indexInSource);
+        public static SfcSegment CreateParameterSegment (string sourcePattern, int indexInSource, string content)
+        {
+            return SfcMultiFormattedParameter.ConstructParameter (sourcePattern, indexInSource, content) ??
+                SfcFormattedParameter.ConstructParameter (sourcePattern, indexInSource, content) ??
+                new SfcParameter (sourcePattern, indexInSource, content);
         }
         #endregion
     }
     #endregion
 
     #region Segments
-    internal class SFCText
+    internal class SfcSegment
     {
         #region Constructor
-        public SFCText (string sourcePattern, string content, int indexInSource)
+        public SfcSegment (string sourcePattern, int indexInSource, string content)
         {
             IndexInSource = indexInSource;
             SourcePattern = sourcePattern;
             RawContent = content;
-            RawContentUnescaped = SFCPattern.UnescapeString(content);
+            RawContentUnescaped = SfcPattern.UnescapeString (content);
         }
         #endregion
 
@@ -255,15 +258,16 @@ namespace Banshee.Renamer
             return RawContentUnescaped;
         }
 
-        internal virtual void Compile() {
+        internal virtual void Compile ()
+        {
         }
         #endregion
     }
 
-    internal class SFCParameter : SFCText
+    internal class SfcParameter : SfcSegment
     {
         /// <summary>
-        /// Initializes a new instance of the <see cref="Banshee.Renamer.SFCParameter"/> class.
+        /// Initializes a new instance of the <see cref="Banshee.Renamer.SfcParameter"/> class.
         /// </summary>
         /// <param name='content'>
         /// Content.
@@ -271,61 +275,77 @@ namespace Banshee.Renamer
         /// <param name='indexInSource'>
         /// Index in the original raw (escaped) source pattern (the index of the '{' character).
         /// </param>.
-        public SFCParameter (string sourcePattern, string content, int indexInSource) : base(sourcePattern, content, indexInSource)
+        public SfcParameter (string sourcePattern, int indexInSource, string content) : base(sourcePattern, indexInSource, content)
         {
         }
 
         public override string ToString (DatabaseTrackInfo song, Func<DatabaseTrackInfo, string, object> parameterMap)
         {
-            return (parameterMap (song, RawContentUnescaped) ?? "").ToString();
+            return (parameterMap (song, RawContentUnescaped) ?? "").ToString ();
         }
     }
 
-    internal class SFCFormattedParameter : SFCText
+    internal class SfcFormattedParameter : SfcSegment
     {
-        internal const char Delimiter = '|';
-        internal const string Header = "Format|";
+        internal const char DelimiterStart = '<';
+        internal const char DelimiterEnd = '>';
+        internal const string Header = "S<";
         internal const char AlignmentFormatStringDelimiter = ':';
-        internal const string SyntaxOutline = "{Format|[alignment:]formatString|parameter name}";
+        internal const string SyntaxOutline = "[S<format>parameter] or [S<alignment:format>parameter]";
 
-        public SFCFormattedParameter (string sourcePattern, string content, int indexInSource) : base(sourcePattern, content, indexInSource)
+        internal static SfcSegment ConstructParameter (string wholePattern, int indexInPattern, string parameterContent)
+        {
+            if (parameterContent.StartsWith (Header)) {
+                return new SfcFormattedParameter (wholePattern, indexInPattern, parameterContent);
+            } else {
+                return null;
+            }
+        }
+
+        public SfcFormattedParameter (string sourcePattern, int indexInSource, string content) : base(sourcePattern, indexInSource, content)
         {
         }
 
         public string Alignment { get; private set; }
+
         public string FormatString { get; private set; }
         /// <summary>
         /// The final format string. Can be used directly in string.Format(this.Format, singleObj).
         /// </summary>
         public string Format { get; private set; }
+
         public string ParameterName { get; private set; }
 
         internal override void Compile ()
         {
-            if (!RawContentUnescaped.StartsWith(Header) || RawContentUnescaped.IndexOf(Delimiter, Header.Length) < 0) {
-                throw new PatternCompilationException(string.Format(Catalog.GetString("This format parameter has an invalid syntax. Expected syntax: {0}"), SyntaxOutline), SourcePattern, IndexInSource);
+            if (!RawContentUnescaped.StartsWith (Header) || RawContentUnescaped.LastIndexOf (DelimiterEnd) < Header.Length) {
+                throw new PatternCompilationException (string.Format (Catalog.GetString ("This 'S-type' format parameter has an invalid syntax. Expected syntax: {0}"), SyntaxOutline), SourcePattern, IndexInSource);
+            }
+
+            string formatPart;
+            string parameters;
+            if (!SfcFormattedParameter.ExtractFormatAndParameters(DelimiterStart, DelimiterEnd, RawContentUnescaped, out formatPart, out parameters)) {
+                throw new PatternCompilationException (string.Format (Catalog.GetString ("This 'S-type' format parameter has an invalid syntax. Expected syntax: {0}"), SyntaxOutline), SourcePattern, IndexInSource);
             }
 
             // Extract the format string and the optional alignment.
-            int indexOfDelimiter = RawContentUnescaped.IndexOf(Delimiter, Header.Length);
-            string formatPart = RawContentUnescaped.Substring (Header.Length, indexOfDelimiter - Header.Length);
-            int indexOfFormatDelimiter = formatPart.IndexOf(AlignmentFormatStringDelimiter);
+            int indexOfFormatDelimiter = formatPart.IndexOf (AlignmentFormatStringDelimiter);
             if (indexOfFormatDelimiter < 0) {
                 FormatString = formatPart;
             } else {
-                Alignment = formatPart.Substring(0, indexOfFormatDelimiter);
-                FormatString = formatPart.Substring(indexOfFormatDelimiter + 1);
+                Alignment = formatPart.Substring (0, indexOfFormatDelimiter);
+                FormatString = formatPart.Substring (indexOfFormatDelimiter + 1);
             }
 
             // Compile the final format string. Can be used directly in string.Format().
-            if (string.IsNullOrEmpty(Alignment)) {
-                if (string.IsNullOrEmpty(FormatString)) {
+            if (string.IsNullOrEmpty (Alignment)) {
+                if (string.IsNullOrEmpty (FormatString)) {
                     Format = "{0}";
                 } else {
                     Format = "{0:" + FormatString + "}";
                 }
             } else {
-                if (string.IsNullOrEmpty(FormatString)) {
+                if (string.IsNullOrEmpty (FormatString)) {
                     Format = "{0," + Alignment + "}";
                 } else {
                     Format = "{0," + Alignment + ":" + FormatString + "}";
@@ -333,19 +353,110 @@ namespace Banshee.Renamer
             }
 
             // Now store the name of the parameter:
-            ParameterName = RawContentUnescaped.Substring(indexOfDelimiter + 1);
+            ParameterName = parameters;
         }
 
         public override string ToString (DatabaseTrackInfo song, Func<DatabaseTrackInfo, string, object> parameterMap)
         {
-            return string.Format(Format, parameterMap(song, ParameterName));
+            return string.Format (Format, parameterMap (song, ParameterName));
+        }
+
+        /// <summary>
+        /// Extracts the format and parameters if the string is of the following format:
+        ///     HEADER'startDelimiter'format'endDelimiter'parameters
+        /// </summary>
+        public static bool ExtractFormatAndParameters(char startDelimiter, char endDelimiter, string content, out string format, out string parameters) {
+            int idxFormatEnd = content.LastIndexOf(endDelimiter);
+            int idxFormatStart = content.IndexOf(startDelimiter);
+            if (idxFormatEnd > idxFormatStart) {
+                format = content.Substring(idxFormatStart + 1, idxFormatEnd - idxFormatStart - 1);
+                parameters = content.Substring(idxFormatEnd + 1);
+                return true;
+            } else {
+                format = null;
+                parameters = null;
+                return false;
+            }
         }
     }
 
-    // TODO: Add a `conditional formatted parameter` {Conditional<Full .NET format string>parameter name}. Example:
-    // {Conditional< - {0:00}>track number}
-    // Which doesn't print anything if the value of the parameter is 'null'. Note that an unknown track number returns null.
+    internal class SfcMultiFormattedParameter : SfcSegment
+    {
+        internal const char DelimiterStart = '<';
+        internal const char DelimiterEnd = '>';
+        internal static readonly char[] ParameterDelimiter = new char[]{','};
+        internal const string Header1 = "F<";
+        internal const string Header2 = "FC<";
+        internal const string SyntaxOutline = "[F<format>P1,P2,...] or [FC<format>P1,P2,...]";
 
+        internal static SfcSegment ConstructParameter (string wholePattern, int indexInPattern, string parameterContent)
+        {
+            if (parameterContent.StartsWith (Header1) || parameterContent.StartsWith (Header2)) {
+                return new SfcMultiFormattedParameter (wholePattern, indexInPattern, parameterContent);
+            } else {
+                return null;
+            }
+        }
+
+        public SfcMultiFormattedParameter (string sourcePattern, int indexInSource, string content) : base(sourcePattern, indexInSource, content)
+        {
+        }
+
+        public bool IsConditional { get; private set; }
+
+        public string Format { get; private set; }
+
+        public string[] Parameters { get; private set; }
+
+        internal override void Compile ()
+        {
+            if (RawContentUnescaped.StartsWith (Header1)) {
+                IsConditional = false;
+            } else if (RawContentUnescaped.StartsWith (Header2)) {
+                IsConditional = true;
+            } else {
+                throw new PatternCompilationException (string.Format (Catalog.GetString ("This 'F-type' format parameter has an invalid syntax. Expected syntax: {0}"), SyntaxOutline), SourcePattern, IndexInSource);
+            }
+
+            string format;
+            string parameters;
+            if (!SfcFormattedParameter.ExtractFormatAndParameters(DelimiterStart, DelimiterEnd, RawContentUnescaped, out format, out parameters)) {
+                throw new PatternCompilationException (string.Format (Catalog.GetString ("This 'F-type' format parameter has an invalid syntax. Expected syntax: {0}"), SyntaxOutline), SourcePattern, IndexInSource);
+            }
+            // Extract the format string:
+            Format = format;
+            // Now extract the parameter names (delimited with commas).
+            Parameters = parameters.Split (ParameterDelimiter, StringSplitOptions.RemoveEmptyEntries);
+
+            if (Parameters == null || Parameters.Length < 1) {
+                throw new PatternCompilationException (string.Format (Catalog.GetString ("The 'F-type' format requires at least one parameter. Expected syntax: {0}"), SyntaxOutline), SourcePattern, IndexInSource);
+            }
+
+            // Test out the format:
+            object[] dummyValues = new object[Parameters.Length];
+            try {
+                string.Format (Format, dummyValues);
+            } catch (FormatException fex) {
+                throw new PatternCompilationException (string.Format (Catalog.GetString ("The format '{0}' is not a valid .NET string format. Format error: '{1}'"), Format, fex.Message), SourcePattern, IndexInSource);
+            }
+        }
+
+        public override string ToString (DatabaseTrackInfo song, Func<DatabaseTrackInfo, string, object> parameterMap)
+        {
+            object firstParameter = parameterMap (song, Parameters [0]);
+            if (IsConditional && firstParameter == null) {
+                return string.Empty;
+            }
+            // NOTE: We cannot reuse a pre-allocated array as this method may be
+            // called from multiple threads.
+            object[] values = new object[Parameters.Length];
+            values [0] = firstParameter;
+            for (int i = Parameters.Length - 1; i > 0; --i) {
+                values [i] = parameterMap (song, Parameters [i]);
+            }
+            return string.Format (Format, values);
+        }
+    }
     #endregion
 }
 

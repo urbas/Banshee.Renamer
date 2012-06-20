@@ -84,7 +84,7 @@ namespace Banshee.Renamer
             SimplePatternCompiler sfc = new SimplePatternCompiler ();
 
             try {
-                var pattern = sfc.CompilePattern (@"{Format|00|track number} - {artist} - {album} - {title} - {unknown} - {Format||unknown}");
+                var pattern = sfc.CompilePattern (@"[S<00>track number] - [artist] - [album] - [title] - [unknown][FC< - {0:00} - {1} - {2}>track number,album,title]");
 
                 Func<DatabaseTrackInfo, string, object> parameterMap = (song, parameter) => {
                     switch (parameter) {
@@ -116,9 +116,9 @@ namespace Banshee.Renamer
                 Log.Error (pcex.Message);
             }
 
-            string str = ConfigurationClient.Get<string> (@"plugins.renamer", "stuff", "a lot of it!");
+            string str = ConfigurationClient.Get<string> (@"plugins.renamer", "stuff", "Drekec!");
             Hyena.Log.Information (str);
-            ConfigurationClient.Set<string> (@"plugins.renamer", "stuff", str + " It!");
+            ConfigurationClient.Set<string> (@"plugins.renamer", "stuff", str + " IT!");
 
 
             RenamerWindow window = new RenamerWindow ();
