@@ -70,21 +70,21 @@ namespace Banshee.Renamer
         /// </summary>
         public readonly string RawPattern;
 
-        public override string Message {
+        public string FullMessage {
             get {
                 if (RawPattern == null) {
                     // The message format in case the RawPattern is not provided:
                     if (Position >= 0) {
-                        return string.Format(Catalog.GetString("Compilation error at character {1}: {0}"), base.Message, Position);
+                        return string.Format(Catalog.GetString("{0} At character {1}."), Message, Position);
                     } else {
-                        return base.Message;
+                        return Message;
                     }
                 } else {
                     // The raw pattern is provided. Print it out:
                     if (Position >= 0) {
-                        return string.Format(Catalog.GetString("Compilation error in pattern '{1}' at character {2}: {0}"), base.Message, RawPattern, Position);
+                        return string.Format(Catalog.GetString("{0} In pattern '{1}' at character {2}."), Message, RawPattern, Position);
                     } else {
-                        return string.Format(Catalog.GetString("Compilation error in pattern '{1}': {0}"), base.Message, RawPattern);
+                        return string.Format(Catalog.GetString("{0} In pattern '{1}'."), Message, RawPattern);
                     }
                 }
             }

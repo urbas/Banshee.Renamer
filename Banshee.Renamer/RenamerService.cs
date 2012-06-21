@@ -81,28 +81,28 @@ namespace Banshee.Renamer
             SimplePatternCompiler sfc = new SimplePatternCompiler ();
 
             try {
-                var pattern = sfc.CompilePattern (@"[FC<{0:00} - >track number][artist] - [album] - [title]\\");
-
-                Func<DatabaseTrackInfo, string, object> parameterMap = (song, parameter) => {
+                Func<string, Func<DatabaseTrackInfo, object>> parameterMap = parameter => {
                     switch (parameter) {
                     case "artist":
-                        return song.DisplayArtistName;
+                        return song => song.DisplayArtistName;
                     case "album":
-                        return song.DisplayAlbumTitle;
+                        return song => song.DisplayAlbumTitle;
                     case "title":
-                        return song.DisplayTrackTitle;
+                        return song => song.DisplayTrackTitle;
                     case "track number":
-                        return song.TrackNumber > 0 ? (object)song.TrackNumber : null;
+                        return song => song.TrackNumber > 0 ? (object)song.TrackNumber : null;
                     default:
                         return null;
                     }
                 };
 
+                var pattern = sfc.CompilePattern (@"[FC<{0:00} - >track number][artist] - [album] - [title]", parameterMap);
+
                 Hyena.Log.Information ("================ Traversing songs =================");
                 StringBuilder sb = new StringBuilder ();
                 ForAllSongs (s => {
                     sb.Clear ();
-                    pattern.CreateFilename (sb, s, parameterMap);
+                    pattern.CreateFilename (sb, s);
                     Hyena.Log.Information (sb.ToString ());
                     //Hyena.Log.Information(string.Format("Song: {0}", s.Uri.AbsoluteUri));
                 },
@@ -110,7 +110,7 @@ namespace Banshee.Renamer
                     Hyena.Log.Information (string.Format ("Not the right type of song: {0}", s.DisplayTrackTitle));
                 });
             } catch (PatternCompilationException pcex) {
-                Log.Error (pcex.Message);
+                Log.Error (pcex.FullMessage);
             }
 
             RenamerWindow window = new RenamerWindow ();

@@ -26,6 +26,7 @@
 using System;
 using Mono.Unix;
 using System.Collections.Generic;
+using System.Text;
 
 namespace Banshee.Renamer
 {
@@ -52,6 +53,9 @@ namespace Banshee.Renamer
                 compilers.Add (compiler);
             }
             cbCompiler.Model = compilersModel;
+
+            // Set a monotype and small font for the guide:
+            tvGuide.ModifyFont(Pango.FontDescription.FromString("monospace 8"));
 
             // Load all the stored patterns (from the persistent configuration):
             RefillStoredPatternsStore ();
@@ -98,6 +102,7 @@ namespace Banshee.Renamer
         private void OnCompilerChanged (object source, EventArgs eargs)
         {
             UpdatePatternCompilerFromComboBox ();
+            UpdateGuide();
         }
 
         /// <summary>
@@ -128,6 +133,8 @@ namespace Banshee.Renamer
             } else {
                 cbCompiler.Active = compilers.IndexOf (currentPattern.Compiler);
             }
+
+            UpdateGuide();
 
             // Focus on the entry field:
             entryPattern.GrabFocus();
@@ -208,6 +215,29 @@ namespace Banshee.Renamer
             if (CurrentPattern != null && !string.Equals (CurrentPattern.Pattern, entryPattern.Text)) {
                 CurrentPattern.Pattern = entryPattern.Text;
             }
+        }
+        #endregion
+
+        #region UI Update Methods (private)
+        private void UpdateGuide()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(Catalog.GetString("=========== List of parameters ===========\n"));
+            // TODO: Add the list of parameters:
+            var knownParams = TrackInfoParameterMap.Parameters;
+            foreach (var param in knownParams) {
+                sb.Append("-   ").Append(param).Append(": ").Append(TrackInfoParameterMap.GetDescription(param)).Append('\n');
+            }
+
+            // Now append the guide for the currently chosen compiler:
+            if (CurrentPattern != null) {
+                var compiler = FilenamePatterns.GetPatternCompiler(CurrentPattern.Compiler);
+                if (compiler != null) {
+                    sb.Append(Catalog.GetString("\n=========== Pattern usage ===========\n\n"));
+                    sb.Append(compiler.Usage);
+                }
+            }
+            tvGuide.Buffer.Text = sb.ToString();
         }
         #endregion
 

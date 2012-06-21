@@ -31,7 +31,7 @@ namespace Banshee.Renamer
     /// A simple implementation of the <see cref="ICompiledFilenamePattern"/>
     /// interface. Intended to be used for providing specific implementations.
     /// </summary>
-    public abstract class SimplePattern : ICompiledFilenamePattern
+    public class SimplePattern : ICompiledFilenamePattern
     {
         public SimplePattern (string patternSource, IFilenamePatternCompiler owner)
         {
@@ -49,7 +49,10 @@ namespace Banshee.Renamer
             private set;
         }
 
-        public abstract void CreateFilename (System.Text.StringBuilder output, Banshee.Collection.Database.DatabaseTrackInfo song, Func<Banshee.Collection.Database.DatabaseTrackInfo, string, object> parameterMap);
+        public virtual void CreateFilename (System.Text.StringBuilder output, Banshee.Collection.Database.DatabaseTrackInfo song)
+        {
+            output.Append(Source);
+        }
     }
 }
 

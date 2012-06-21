@@ -13,6 +13,7 @@ SOURCES =  \
 	Banshee.Renamer/RenamerWindow.cs \
 	Banshee.Renamer/SimplePattern.cs \
 	Banshee.Renamer/SimplePatternCompiler.cs \
+	Banshee.Renamer/TrackInfoParameterMap.cs \
 	gtk-gui/Banshee.Renamer.RenamerWindow.cs \
 	gtk-gui/generated.cs
 

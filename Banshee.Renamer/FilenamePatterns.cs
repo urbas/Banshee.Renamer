@@ -26,6 +26,7 @@
 using System;
 using System.Collections.Generic;
 using Mono.Unix;
+using Banshee.Collection.Database;
 
 namespace Banshee.Renamer
 {
@@ -43,6 +44,7 @@ namespace Banshee.Renamer
         static FilenamePatterns ()
         {
             registry.Add (SimplePatternCompiler.CompilerName, new SimplePatternCompiler ());
+            registry.Add (DummyPatternCompiler.CompilerName, new DummyPatternCompiler ());
         }
         #endregion
 
@@ -61,7 +63,7 @@ namespace Banshee.Renamer
             if (compiler == null) {
                 throw new PatternCompilationException (string.Format (Catalog.GetString ("Could not compile the pattern '{0}' with the pattern compiler '{1}'."), pattern, compilerName));
             } else {
-                return compiler.CompilePattern(pattern);
+                return compiler.CompilePattern(pattern, TrackInfoParameterMap.GetParameterMap);
             }
         }
         /// <summary>
@@ -88,6 +90,24 @@ namespace Banshee.Renamer
             }
         }
         #endregion
+    }
+
+    internal class DummyPatternCompiler : IFilenamePatternCompiler {
+        public const string CompilerName = "Dummy Pattern v1";
+        public string Name {
+            get {
+                return CompilerName;
+            }
+        }
+        public ICompiledFilenamePattern CompilePattern (string pattern, Func<string, Func<DatabaseTrackInfo, object>> parameterMap)
+        {
+            return new SimplePattern(pattern, this);
+        }
+        public string Usage {
+            get {
+                return Catalog.GetString("Patterns of this type produce filenames literally the same as the input pattern.");
+            }
+        }
     }
 }
 

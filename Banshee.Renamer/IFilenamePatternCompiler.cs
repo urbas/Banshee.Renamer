@@ -46,12 +46,18 @@ namespace Banshee.Renamer
         /// </summary>
         /// <exception cref="Banshee.Renamer.PatternCompilationException">thrown if the
         /// compilation failed for any reason.</exception>
-        ICompiledFilenamePattern CompilePattern(string pattern);
+        ICompiledFilenamePattern CompilePattern(string pattern, Func<string, Func<DatabaseTrackInfo, object>> parameterMap);
 
         /// <summary>
         /// Gets the name of this compiler.
         /// </summary>
         string Name { get; }
+
+        /// <summary>
+        /// Gets a human-readable (ASCII-art) string that describes the usage
+        /// of this pattern type.
+        /// </summary>
+        string Usage { get; }
     }
 }
 

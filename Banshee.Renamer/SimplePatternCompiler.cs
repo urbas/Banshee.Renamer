@@ -47,16 +47,39 @@ namespace Banshee.Renamer
     public class SimplePatternCompiler : IFilenamePatternCompiler
     {
         public const string CompilerName = "Renamer Pattern v1";
+        private const string ExamplePattern3 = @"[directory]/[FC<{0:00} - >track number][artist] - [album] - [title]";
+        private const string ExamplePattern2 = @"[directory]/[S<00>track number] - [artist] - [album] - [title]";
+        private const string ExamplePattern1 = @"[home]/Music/[artist] - [album] - [title]";
 
-        public ICompiledFilenamePattern CompilePattern (string pattern)
+        public ICompiledFilenamePattern CompilePattern (string pattern, Func<string, Func<DatabaseTrackInfo, object>> parameterMap)
         {
-            SfcPattern compiledPattern = new SfcPattern (pattern, this);
+            SfcPattern compiledPattern = new SfcPattern (pattern, this, parameterMap);
             return compiledPattern;
         }
 
         public string Name {
             get {
                 return CompilerName;
+            }
+        }
+
+        public string Usage {
+            get {
+                return string.Format (Catalog.GetString (
+                    "Pattern engine: `{0}`\n" +
+                    "\n" +
+                    "The pattern may include template placeholders with the following syntax:\n" +
+                    "\n" +
+                    "-   {1}: simple parameter (it's interpolated with track's info directly)\n" +
+                    "-   {2}: formatted parameter (the track's is formatted using the .NET string formatting syntax),\n" +
+                    "-   {3}: formatted multi-parameter (also using the .NET format syntax) where the `FC` means that an empty string will be produced if the first parameter is `null`.\n" +
+                    "\n" +
+                    "Some examples:\n" +
+                    "\n" +
+                    "-   {4}\n" +
+                    "-   {5}\n" +
+                    "-   {6}"
+                    ), Name, SfcParameter.SyntaxOutline, SfcFormattedParameter.SyntaxOutline, SfcMultiFormattedParameter.SyntaxOutline, ExamplePattern1, ExamplePattern2, ExamplePattern3);
             }
         }
     }
@@ -75,18 +98,18 @@ namespace Banshee.Renamer
         #endregion
 
         #region Constructors
-        internal SfcPattern (string sourcePattern, SimplePatternCompiler owner) : base(sourcePattern, owner)
+        internal SfcPattern (string sourcePattern, SimplePatternCompiler owner, Func<string, Func<DatabaseTrackInfo, object>> parameterMap) : base(sourcePattern, owner)
         {
-            segments = ExtractPatternSegments (sourcePattern);
+            segments = ExtractPatternSegments (sourcePattern, parameterMap);
         }
         #endregion
 
         #region IFilenamePatternCompiler implementation
-        public override void CreateFilename (System.Text.StringBuilder output, DatabaseTrackInfo song, Func<DatabaseTrackInfo, string, object> parameterMap)
+        public override void CreateFilename (System.Text.StringBuilder output, DatabaseTrackInfo song)
         {
             int segmentsCount = segments.Count;
             for (int i = 0; i < segmentsCount; i++) {
-                output.Append (segments [i].ToString (song, parameterMap));
+                output.Append (segments [i].ToString (song));
             }
         }
         #endregion
@@ -173,7 +196,7 @@ namespace Banshee.Renamer
         /// This method uses a finite state automaton parser.
         /// TODO: The same should be done for parameter parsing.
         /// </summary>
-        private static List<SfcSegment> ExtractPatternSegments (string sourcePattern)
+        private static List<SfcSegment> ExtractPatternSegments (string sourcePattern, Func<string, Func<DatabaseTrackInfo, object>> parameterMap)
         {
             var segments = new List<SfcSegment> ();
 
@@ -235,7 +258,7 @@ namespace Banshee.Renamer
 
             // All the segments have been collected. We only have to compile them now...
             for (int i = segments.Count - 1; i >= 0; --i) {
-                segments[i].Compile();
+                segments [i].Compile (parameterMap);
             }
 
             return segments;
@@ -287,12 +310,12 @@ namespace Banshee.Renamer
         #endregion
 
         #region Customisable Behaviour
-        public virtual string ToString (DatabaseTrackInfo song, Func<DatabaseTrackInfo, string, object> parameterMap)
+        public virtual string ToString (DatabaseTrackInfo song)
         {
             return Content;
         }
 
-        internal virtual void Compile ()
+        internal virtual void Compile (Func<string, Func<DatabaseTrackInfo, object>> parameterMap)
         {
         }
 
@@ -305,6 +328,8 @@ namespace Banshee.Renamer
 
     internal class SfcParameter : SfcSegment
     {
+        internal const string SyntaxOutline = @"[parameter name]";
+
         /// <summary>
         /// Initializes a new instance of the <see cref="Banshee.Renamer.SfcParameter"/> class.
         /// </summary>
@@ -318,9 +343,19 @@ namespace Banshee.Renamer
         {
         }
 
-        public override string ToString (DatabaseTrackInfo song, Func<DatabaseTrackInfo, string, object> parameterMap)
+        public Func<DatabaseTrackInfo, object> ParameterLookup { get; private set; }
+
+        internal override void Compile (Func<string, Func<DatabaseTrackInfo, object>> parameterMap)
         {
-            return (parameterMap (song, Content) ?? "").ToString ();
+            ParameterLookup = parameterMap (Content);
+            if (ParameterLookup == null) {
+                throw new PatternCompilationException (string.Format (Catalog.GetString ("The parameter '{0}' is unknown."), Content), SourcePattern, IndexInSource);
+            }
+        }
+
+        public override string ToString (DatabaseTrackInfo song)
+        {
+            return (ParameterLookup (song) ?? "").ToString ();
         }
 
         public override string ToString ()
@@ -336,7 +371,7 @@ namespace Banshee.Renamer
         internal const string Header = "S<";
         // TODO: Introduce 'SC<'
         internal const char AlignmentFormatStringDelimiter = ':';
-        internal const string SyntaxOutline = "[S<format>parameter] or [S<alignment:format>parameter]";
+        internal const string SyntaxOutline = "[S<format>parameter name] or [S<alignment:format>parameter name]";
 
         internal static SfcSegment ConstructParameter (string wholePattern, int indexInPattern, string parameterContent)
         {
@@ -361,7 +396,9 @@ namespace Banshee.Renamer
 
         public string ParameterName { get; private set; }
 
-        internal override void Compile ()
+        public Func<DatabaseTrackInfo, object> ParameterLookup { get; private set; }
+
+        internal override void Compile (Func<string, Func<DatabaseTrackInfo, object>> parameterMap)
         {
             if (!Content.StartsWith (Header) || Content.LastIndexOf (DelimiterEnd) < Header.Length) {
                 throw new PatternCompilationException (string.Format (Catalog.GetString ("This 'S-type' format parameter has an invalid syntax. Expected syntax: {0}"), SyntaxOutline), SourcePattern, IndexInSource);
@@ -399,11 +436,15 @@ namespace Banshee.Renamer
 
             // Now store the name of the parameter:
             ParameterName = parameters;
+            ParameterLookup = parameterMap (ParameterName);
+            if (ParameterLookup == null) {
+                throw new PatternCompilationException (string.Format (Catalog.GetString ("The parameter '{0}' is unknown."), Content), SourcePattern, IndexInSource);
+            }
         }
 
-        public override string ToString (DatabaseTrackInfo song, Func<DatabaseTrackInfo, string, object> parameterMap)
+        public override string ToString (DatabaseTrackInfo song)
         {
-            return string.Format (Format, parameterMap (song, ParameterName));
+            return string.Format (Format, ParameterLookup (song));
         }
 
         public override string ToString ()
@@ -461,7 +502,9 @@ namespace Banshee.Renamer
 
         public string[] Parameters { get; private set; }
 
-        internal override void Compile ()
+        public Func<DatabaseTrackInfo, object>[] ParameterLookups { get; private set; }
+
+        internal override void Compile (Func<string, Func<DatabaseTrackInfo, object>> parameterMap)
         {
             if (Content.StartsWith (Header1)) {
                 IsConditional = false;
@@ -493,30 +536,38 @@ namespace Banshee.Renamer
             } catch (FormatException fex) {
                 throw new PatternCompilationException (string.Format (Catalog.GetString ("The format '{0}' is not a valid .NET string format. Format error: '{1}'"), Format, fex.Message), SourcePattern, IndexInSource);
             }
+            ParameterLookups = new Func<DatabaseTrackInfo, object>[Parameters.Length];
+            for (int i = 0; i < Parameters.Length; i++) {
+                ParameterLookups [i] = parameterMap (Parameters [i]);
+                if (ParameterLookups [i] == null) {
+                    throw new PatternCompilationException (string.Format (Catalog.GetString ("The parameter '{0}' is unknown."), Parameters [i]), SourcePattern, IndexInSource);
+                }
+            }
         }
 
-        public override string ToString (DatabaseTrackInfo song, Func<DatabaseTrackInfo, string, object> parameterMap)
+        public override string ToString (DatabaseTrackInfo song)
         {
-            object firstParameter = parameterMap (song, Parameters [0]);
+            object firstParameter = ParameterLookups [0] (song);
             if (IsConditional && firstParameter == null) {
                 return string.Empty;
             }
 
             // A small optimisation if there is a small number of parameters:
             int len = Parameters.Length;
-            if (len == 1)
-                return string.Format(Format, firstParameter);
-            else if (len == 2) {
-                return string.Format(Format, firstParameter, Parameters[1]);
+            if (len == 1) {
+                return string.Format (Format, firstParameter);
+            } else if (len == 2) {
+                return string.Format (Format, firstParameter, ParameterLookups [1] (song));
             } else if (len == 3) {
-                return string.Format(Format, firstParameter, Parameters[1], Parameters[2]);
+                return string.Format (Format, firstParameter, ParameterLookups [1] (song), ParameterLookups [2] (song));
             } else {
                 // NOTE: We cannot reuse a pre-allocated array as this method may be
                 // called from multiple threads.
                 object[] values = new object[Parameters.Length];
                 for (int i = Parameters.Length - 1; i > 0; --i) {
-                    values [i] = parameterMap (song, Parameters [i]);
+                    values [i] = ParameterLookups [i] (song);
                 }
+                values[0] = firstParameter;
                 return string.Format (Format, values);
             }
         }
