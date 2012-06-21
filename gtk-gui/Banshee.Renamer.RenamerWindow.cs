@@ -11,7 +11,7 @@ namespace Banshee.Renamer
 		private global::Gtk.Button btnAdd;
 		private global::Gtk.Entry entryPattern;
 		private global::Gtk.ScrolledWindow GtkScrolledWindow1;
-		private global::Gtk.NodeView tableStoredPatterns;
+		private global::Gtk.NodeView tableStoredTemplates;
 		private global::Gtk.VBox vbox2;
 		private global::Gtk.Button btnDelete;
 		private global::Gtk.ComboBox cbCompiler;
@@ -78,10 +78,10 @@ namespace Banshee.Renamer
 			this.GtkScrolledWindow1.Name = "GtkScrolledWindow1";
 			this.GtkScrolledWindow1.ShadowType = ((global::Gtk.ShadowType)(1));
 			// Container child GtkScrolledWindow1.Gtk.Container+ContainerChild
-			this.tableStoredPatterns = new global::Gtk.NodeView ();
-			this.tableStoredPatterns.CanFocus = true;
-			this.tableStoredPatterns.Name = "tableStoredPatterns";
-			this.GtkScrolledWindow1.Add (this.tableStoredPatterns);
+			this.tableStoredTemplates = new global::Gtk.NodeView ();
+			this.tableStoredTemplates.CanFocus = true;
+			this.tableStoredTemplates.Name = "tableStoredTemplates";
+			this.GtkScrolledWindow1.Add (this.tableStoredTemplates);
 			this.layoutPattern.Add (this.GtkScrolledWindow1);
 			global::Gtk.Table.TableChild w4 = ((global::Gtk.Table.TableChild)(this.layoutPattern [this.GtkScrolledWindow1]));
 			w4.TopAttach = ((uint)(1));
@@ -122,7 +122,7 @@ namespace Banshee.Renamer
 			this.framePattern.Add (this.GtkAlignment2);
 			this.lblPattern = new global::Gtk.Label ();
 			this.lblPattern.Name = "lblPattern";
-			this.lblPattern.LabelProp = global::Mono.Unix.Catalog.GetString ("<b>Pattern:</b>");
+			this.lblPattern.LabelProp = global::Mono.Unix.Catalog.GetString ("<b>Template:</b>");
 			this.lblPattern.UseMarkup = true;
 			this.framePattern.LabelWidget = this.lblPattern;
 			this.vboxMain.Add (this.framePattern);

@@ -33,7 +33,7 @@ namespace Banshee.Renamer
 {
     /// <summary>
     /// Contains a library of parameters that can be extracted from a song and
-    /// used in a filename pattern.
+    /// used in a filename template.
     /// </summary>
     public static class TrackInfoParameterMap
     {
@@ -47,8 +47,8 @@ namespace Banshee.Renamer
             }
         }
 
-        public static Func<DatabaseTrackInfo, object> GetParameterMap(string parameter) {
-            Func<DatabaseTrackInfo, object> lookup;
+        public static Lookup<DatabaseTrackInfo> GetParameterMap(string parameter) {
+            Lookup<DatabaseTrackInfo> lookup;
             if (parameterMaps.TryGetValue(parameter, out lookup))
                 return lookup;
             return null;
@@ -56,7 +56,7 @@ namespace Banshee.Renamer
 
         private static List<string> parameters = new List<string>();
         private static Dictionary<string, string> parameterDescriptions = new Dictionary<string, string>();
-        private static Dictionary<string, Func<DatabaseTrackInfo, object>> parameterMaps = new Dictionary<string, Func<DatabaseTrackInfo, object>>();
+        private static Dictionary<string, Lookup<DatabaseTrackInfo>> parameterMaps = new Dictionary<string, Lookup<DatabaseTrackInfo>>();
 
         static TrackInfoParameterMap() {
             // Add all parameters:
@@ -68,7 +68,7 @@ namespace Banshee.Renamer
             parameters.Sort ();
         }
 
-        private static void AddParameter(string parameter, string description, Func<DatabaseTrackInfo, object> map) {
+        private static void AddParameter(string parameter, string description, Lookup<DatabaseTrackInfo> map) {
             parameters.Add(parameter);
             parameterDescriptions.Add(parameter, description);
             parameterMaps.Add(parameter, map);

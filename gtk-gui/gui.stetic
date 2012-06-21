@@ -84,7 +84,7 @@
                         <property name="MemberName" />
                         <property name="ShadowType">In</property>
                         <child>
-                          <widget class="Gtk.NodeView" id="tableStoredPatterns">
+                          <widget class="Gtk.NodeView" id="tableStoredTemplates">
                             <property name="MemberName" />
                             <property name="CanFocus">True</property>
                             <property name="ShowScrollbars">True</property>
@@ -160,7 +160,7 @@
             <child>
               <widget class="Gtk.Label" id="lblPattern">
                 <property name="MemberName" />
-                <property name="LabelProp" translatable="yes">&lt;b&gt;Pattern:&lt;/b&gt;</property>
+                <property name="LabelProp" translatable="yes">&lt;b&gt;Template:&lt;/b&gt;</property>
                 <property name="UseMarkup">True</property>
               </widget>
               <packing>

@@ -1,5 +1,5 @@
 // 
-// TemplateCompilationException.cs
+// ICompiledTemplate.cs
 // 
 // Author:
 //   Matej Urbas <matej.urbas@gmail.com>
@@ -23,3 +23,31 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
+using System;
+using System.Text;
+
+namespace Banshee.Renamer
+{
+    /// <summary>
+    /// Templates are strings that contain placeholders which in turn are supposed to be replaced by data extracted from a given object (the data source).
+    /// Compiled templates do exactly this but they have been compiled from one such 'template string' by a template engine for efficiency purposes.
+    /// </summary>
+    public interface ICompiledTemplate<T>
+    {
+        /// <summary>
+        /// Gets the 'template string' that gave rise to this compiled pattern.
+        /// </summary>
+        string Source { get; }
+
+        /// <summary>
+        /// The template engine that created this pattern.
+        /// </summary>
+        ITemplateEngine<T> Owner { get; }
+
+        /// <summary>
+        /// Creates a string by filling out placeholders with data provided by the data source.
+        /// </summary>
+        void CreateString(StringBuilder output, T dataSource);
+    }
+}
+

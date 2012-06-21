@@ -30,34 +30,4 @@ using Banshee.Collection.Database;
 
 namespace Banshee.Renamer
 {
-    /// <summary>
-    /// Implementations of this interface provide the following:
-    ///
-    ///     1.) Loading (parsing and compiling) a string pattern, which is in a human-readable and human-editable form.
-    ///     2.) Creating a string (filename) for a song based on the compiled pattern and actual parameters.
-    ///     3.) Methods of this class should be callable from multiple threads.
-    ///     4.) They should register themselves in the <see cref="Banshee.Renamer.FilenamePatterns"/> registry (TODO: provide a way for dynamic registration of additional filename creators).
-    /// </summary>
-    public interface IFilenamePatternCompiler
-    {
-        /// <summary>
-        /// Returns a compiled pattern for the given string. The returned object will
-        /// be used in string creation. This method is called seldomly.
-        /// </summary>
-        /// <exception cref="Banshee.Renamer.PatternCompilationException">thrown if the
-        /// compilation failed for any reason.</exception>
-        ICompiledFilenamePattern CompilePattern(string pattern, Func<string, Func<DatabaseTrackInfo, object>> parameterMap);
-
-        /// <summary>
-        /// Gets the name of this compiler.
-        /// </summary>
-        string Name { get; }
-
-        /// <summary>
-        /// Gets a human-readable (ASCII-art) string that describes the usage
-        /// of this pattern type.
-        /// </summary>
-        string Usage { get; }
-    }
 }
-

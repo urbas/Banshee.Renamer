@@ -4,15 +4,14 @@ LINK = $(REF_EXTENSION_RENAMER)
 INSTALL_DIR = $(EXTENSIONS_INSTALL_DIR)
 
 SOURCES =  \
-	Banshee.Renamer/FilenamePatterns.cs \
-	Banshee.Renamer/ICompiledFilenamePattern.cs \
-	Banshee.Renamer/IFilenamePatternCompiler.cs \
-	Banshee.Renamer/PatternCompilationException.cs \
-	Banshee.Renamer/PatternStorage.cs \
+	Banshee.Renamer/ICompiledTemplate.cs \
+	Banshee.Renamer/ITemplateEngine.cs \
 	Banshee.Renamer/RenamerService.cs \
 	Banshee.Renamer/RenamerWindow.cs \
-	Banshee.Renamer/SimplePattern.cs \
-	Banshee.Renamer/SimplePatternCompiler.cs \
+	Banshee.Renamer/SongFilenameTemplates.cs \
+	Banshee.Renamer/TemplateCompilationException.cs \
+	Banshee.Renamer/TemplateEngineV1.cs \
+	Banshee.Renamer/TemplateStorage.cs \
 	Banshee.Renamer/TrackInfoParameterMap.cs \
 	gtk-gui/Banshee.Renamer.RenamerWindow.cs \
 	gtk-gui/generated.cs

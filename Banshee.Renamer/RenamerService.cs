@@ -78,10 +78,10 @@ namespace Banshee.Renamer
                 Console.WriteLine (s.ServiceName);
             }
 
-            SimplePatternCompiler sfc = new SimplePatternCompiler ();
+            TemplateEngineV1 sfc = new TemplateEngineV1 ();
 
             try {
-                Func<string, Func<DatabaseTrackInfo, object>> parameterMap = parameter => {
+                LookupMap<DatabaseTrackInfo> parameterMap = parameter => {
                     switch (parameter) {
                     case "artist":
                         return song => song.DisplayArtistName;
@@ -96,20 +96,20 @@ namespace Banshee.Renamer
                     }
                 };
 
-                var pattern = sfc.CompilePattern (@"[FC<{0:00} - >track number][artist] - [album] - [title]", parameterMap);
+                var pattern = sfc.CompileTemplate (@"[FC<{0:00} - >track number][artist] - [album] - [title]", parameterMap);
 
                 Hyena.Log.Information ("================ Traversing songs =================");
                 StringBuilder sb = new StringBuilder ();
                 ForAllSongs (s => {
                     sb.Clear ();
-                    pattern.CreateFilename (sb, s);
+                    pattern.CreateString (sb, s);
                     Hyena.Log.Information (sb.ToString ());
                     //Hyena.Log.Information(string.Format("Song: {0}", s.Uri.AbsoluteUri));
                 },
                 s => {
                     Hyena.Log.Information (string.Format ("Not the right type of song: {0}", s.DisplayTrackTitle));
                 });
-            } catch (PatternCompilationException pcex) {
+            } catch (TemplateCompilationException pcex) {
                 Log.Error (pcex.FullMessage);
             }
 

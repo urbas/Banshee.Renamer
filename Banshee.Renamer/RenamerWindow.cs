@@ -33,11 +33,11 @@ namespace Banshee.Renamer
     public partial class RenamerWindow : Gtk.Window
     {
         #region Fields
-        private Gtk.NodeStore storedPatterns = new Gtk.NodeStore (typeof(StoredPatternNode));
-        private List<StoredPattern> sps;
+        private Gtk.NodeStore storedTemplates = new Gtk.NodeStore (typeof(StoredTemplateNode));
+        private List<StoredTemplate> sps;
         private List<string> compilers = new List<string> ();
         private int defCompilerIndex = 0;
-        private StoredPatternNode currentPattern;
+        private StoredTemplateNode currentPattern;
         #endregion
 
         #region Constructor
@@ -48,7 +48,7 @@ namespace Banshee.Renamer
 
             // Initialise the list of pattern compilers:
             Gtk.ListStore compilersModel = new Gtk.ListStore (typeof(string));
-            foreach (var compiler in FilenamePatterns.RegisteredCreatorNames) {
+            foreach (var compiler in SongFilenameTemplates.KnownTemplateEngines) {
                 compilersModel.AppendValues (compiler);
                 compilers.Add (compiler);
             }
@@ -58,14 +58,14 @@ namespace Banshee.Renamer
             tvGuide.ModifyFont(Pango.FontDescription.FromString("monospace 8"));
 
             // Load all the stored patterns (from the persistent configuration):
-            RefillStoredPatternsStore ();
+            RefillStoredTemplatesStore ();
 
             // Initialise the table of stored patterns:
-            tableStoredPatterns.NodeStore = storedPatterns;
-            tableStoredPatterns.AppendColumn (Catalog.GetString ("Pattern"), new Gtk.CellRendererText (), "text", 0);
-            tableStoredPatterns.AppendColumn (Catalog.GetString ("Type"), new Gtk.CellRendererText (), "text", 1);
-            tableStoredPatterns.NodeSelection.Changed += OnSelectionChanged;
-            tableStoredPatterns.Selection.Mode = Gtk.SelectionMode.Single;
+            tableStoredTemplates.NodeStore = storedTemplates;
+            tableStoredTemplates.AppendColumn (Catalog.GetString ("Template"), new Gtk.CellRendererText (), "text", 0);
+            tableStoredTemplates.AppendColumn (Catalog.GetString ("Type"), new Gtk.CellRendererText (), "text", 1);
+            tableStoredTemplates.NodeSelection.Changed += OnSelectionChanged;
+            tableStoredTemplates.Selection.Mode = Gtk.SelectionMode.Single;
 
             // Create a new stored pattern and make it the currently edited one:
             CurrentPattern = GetNewPattern ();
@@ -78,7 +78,7 @@ namespace Banshee.Renamer
         #endregion
 
         #region Properties (private)
-        private StoredPatternNode CurrentPattern {
+        private StoredTemplateNode CurrentPattern {
             get { return currentPattern; }
             set {
                 if (currentPattern != value) {
@@ -106,7 +106,7 @@ namespace Banshee.Renamer
         }
 
         /// <summary>
-        /// This method is invoked when the StoredPatternNode fires its changed event.
+        /// This method is invoked when the StoredTemplateNode fires its changed event.
         /// </summary>
         private void OnCurrentPatternModified (object source, EventArgs eargs)
         {
@@ -124,14 +124,14 @@ namespace Banshee.Renamer
             if (currentPattern == null) {
                 entryPattern.Text = string.Empty;
             } else {
-                entryPattern.Text = currentPattern.Pattern ?? string.Empty;
+                entryPattern.Text = currentPattern.Template ?? string.Empty;
             }
 
             // Update the currently selected compiler:
             if (currentPattern == null) {
                 cbCompiler.Active = defCompilerIndex;
             } else {
-                cbCompiler.Active = compilers.IndexOf (currentPattern.Compiler);
+                cbCompiler.Active = compilers.IndexOf (currentPattern.Engine);
             }
 
             UpdateGuide();
@@ -145,7 +145,7 @@ namespace Banshee.Renamer
         /// </summary>
         void OnSelectionChanged (object sender, EventArgs e)
         {
-            StoredPatternNode sn = tableStoredPatterns.NodeSelection.SelectedNode as StoredPatternNode;
+            StoredTemplateNode sn = tableStoredTemplates.NodeSelection.SelectedNode as StoredTemplateNode;
             if (sn != null) {
                 CurrentPattern = sn;
             }
@@ -164,11 +164,11 @@ namespace Banshee.Renamer
         /// </summary>
         private void OnPatternAdded (object sender, System.EventArgs ea)
         {
-            StoredPattern sp = new StoredPattern (entryPattern.Text, compilers [cbCompiler.Active]);
+            StoredTemplate sp = new StoredTemplate (entryPattern.Text, compilers [cbCompiler.Active]);
             sps.Add (sp);
-            storedPatterns.AddNode (new StoredPatternNode (sp));
+            storedTemplates.AddNode (new StoredTemplateNode (sp));
             // Select the newly added one.
-            tableStoredPatterns.NodeSelection.SelectPath (new Gtk.TreePath (new int[] { sps.Count - 1 }));
+            tableStoredTemplates.NodeSelection.SelectPath (new Gtk.TreePath (new int[] { sps.Count - 1 }));
         }
 
         /// <summary>
@@ -176,15 +176,15 @@ namespace Banshee.Renamer
         /// </summary>
         private void OnPatternDeleted (object sender, System.EventArgs e)
         {
-            StoredPatternNode sn = tableStoredPatterns.NodeSelection.SelectedNode as StoredPatternNode;
+            StoredTemplateNode sn = tableStoredTemplates.NodeSelection.SelectedNode as StoredTemplateNode;
             if (sn != null) {
-                int selectionIndex = sps.IndexOf (sn.StoredPattern);
+                int selectionIndex = sps.IndexOf (sn.StoredTemplate);
                 if (selectionIndex >= 0) {
                     sps.RemoveAt (selectionIndex);
-                    storedPatterns.RemoveNode (sn);
+                    storedTemplates.RemoveNode (sn);
                     // Select the next one in the list:
                     if (sps.Count > 0) {
-                        tableStoredPatterns.NodeSelection.SelectPath (new Gtk.TreePath (new int[] { selectionIndex < sps.Count ? selectionIndex : selectionIndex - 1 }));
+                        tableStoredTemplates.NodeSelection.SelectPath (new Gtk.TreePath (new int[] { selectionIndex < sps.Count ? selectionIndex : selectionIndex - 1 }));
                     } else {
                         // There are none in the list. Create a new one:
                         CurrentPattern = GetNewPattern ();
@@ -197,7 +197,7 @@ namespace Banshee.Renamer
         #region Overriden Methods
         protected override void OnDestroyed ()
         {
-            StoreStoredPatterns ();
+            StoreStoredTemplates ();
             base.OnDestroyed ();
         }
         #endregion
@@ -205,15 +205,15 @@ namespace Banshee.Renamer
         #region Update Model From UI (private)
         private void UpdatePatternCompilerFromComboBox ()
         {
-            if (CurrentPattern != null && !string.Equals (CurrentPattern.Compiler, compilers [cbCompiler.Active])) {
-                CurrentPattern.Compiler = compilers [cbCompiler.Active];
+            if (CurrentPattern != null && !string.Equals (CurrentPattern.Engine, compilers [cbCompiler.Active])) {
+                CurrentPattern.Engine = compilers [cbCompiler.Active];
             }
         }
 
         private void UpdatePatternFromEntry ()
         {
-            if (CurrentPattern != null && !string.Equals (CurrentPattern.Pattern, entryPattern.Text)) {
-                CurrentPattern.Pattern = entryPattern.Text;
+            if (CurrentPattern != null && !string.Equals (CurrentPattern.Template, entryPattern.Text)) {
+                CurrentPattern.Template = entryPattern.Text;
             }
         }
         #endregion
@@ -231,9 +231,9 @@ namespace Banshee.Renamer
 
             // Now append the guide for the currently chosen compiler:
             if (CurrentPattern != null) {
-                var compiler = FilenamePatterns.GetPatternCompiler(CurrentPattern.Compiler);
+                var compiler = SongFilenameTemplates.GetTemplateEngine(CurrentPattern.Engine);
                 if (compiler != null) {
-                    sb.Append(Catalog.GetString("\n=========== Pattern usage ===========\n\n"));
+                    sb.Append(Catalog.GetString("\n=========== Template usage ===========\n\n"));
                     sb.Append(compiler.Usage);
                 }
             }
@@ -242,62 +242,62 @@ namespace Banshee.Renamer
         #endregion
 
         #region Helper Methods (private)
-        private StoredPatternNode GetNewPattern ()
+        private StoredTemplateNode GetNewPattern ()
         {
             int compilerIndex = defCompilerIndex;
             if (cbCompiler.Active >= 0 && cbCompiler.Active < compilers.Count) {
                 compilerIndex = cbCompiler.Active;
             }
-            return new StoredPatternNode (new StoredPattern (string.Empty, compilers [compilerIndex]));
+            return new StoredTemplateNode (new StoredTemplate (string.Empty, compilers [compilerIndex]));
         }
 
-        private void RefillStoredPatternsStore ()
+        private void RefillStoredTemplatesStore ()
         {
-            storedPatterns.Clear ();
-            sps = PatternStorage.LoadPatterns ();
-            foreach (StoredPattern sp in sps) {
+            storedTemplates.Clear ();
+            sps = TemplateStorage.LoadTemplates ();
+            foreach (StoredTemplate sp in sps) {
                 if (sp != null && sp.IsValid) {
-                    storedPatterns.AddNode (new StoredPatternNode (sp));
+                    storedTemplates.AddNode (new StoredTemplateNode (sp));
                 }
             }
         }
 
-        private void StoreStoredPatterns ()
+        private void StoreStoredTemplates ()
         {
-            PatternStorage.StorePatterns (sps);
+            TemplateStorage.StoreTemplates (sps);
         }
         #endregion
     }
 
     [Gtk.TreeNode (ListOnly=true)]
-    public class StoredPatternNode : Gtk.TreeNode
+    public class StoredTemplateNode : Gtk.TreeNode
     {
 
-        public readonly StoredPattern StoredPattern;
+        public readonly StoredTemplate StoredTemplate;
 
-        public StoredPatternNode (StoredPattern sp)
+        public StoredTemplateNode (StoredTemplate sp)
         {
-            StoredPattern = sp;
+            StoredTemplate = sp;
         }
 
         [Gtk.TreeNodeValue (Column=0)]
-        public string Pattern {
+        public string Template {
             get {
-                return StoredPattern.Pattern ?? string.Empty;
+                return StoredTemplate.Template ?? string.Empty;
             }
             set {
-                StoredPattern.Pattern = value;
+                StoredTemplate.Template = value;
                 this.OnChanged ();
             }
         }
 
         [Gtk.TreeNodeValue (Column=1)]
-        public string Compiler {
+        public string Engine {
             get {
-                return StoredPattern.Compiler ?? string.Empty;
+                return StoredTemplate.Engine ?? string.Empty;
             }
             set {
-                StoredPattern.Compiler = value;
+                StoredTemplate.Engine = value;
                 this.OnChanged ();
             }
         }

@@ -29,31 +29,5 @@ using Banshee.Collection.Database;
 
 namespace Banshee.Renamer
 {
-    /// <summary>
-    /// Represents a compiled pattern pattern of a filename creator.
-    /// Implementations may extend the <see cref="Banshee.Renamer.SimplePattern"/> instead of this
-    /// interface directly.
-    /// </summary>
-    public interface ICompiledFilenamePattern
-    {
-        /// <summary>
-        /// Gets the source string for this pattern (the string that was passed to the
-        /// filename creator when this pattern was constructed).
-        /// </summary>
-        string Source { get; }
-
-        /// <summary>
-        /// The filename creator which created this pattern.
-        /// </summary>
-        IFilenamePatternCompiler Owner { get; }
-
-        /// <summary>
-        /// Creates a string using the set pattern, a given object, and a given map. The map returns
-        /// a string for the object and the given parameter (the parameters appear in the pattern).
-        /// This method will be called a lot of times (and quite possibly from multiple threads).
-        /// </summary>
-        void CreateFilename(StringBuilder output, DatabaseTrackInfo song);
-
-    }
 }
 

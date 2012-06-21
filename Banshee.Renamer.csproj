@@ -55,15 +55,14 @@
     <Compile Include="Banshee.Renamer\RenamerService.cs" />
     <Compile Include="gtk-gui\generated.cs" />
     <Compile Include="gtk-gui\Banshee.Renamer.RenamerWindow.cs" />
-    <Compile Include="Banshee.Renamer\PatternCompilationException.cs" />
-    <Compile Include="Banshee.Renamer\ICompiledFilenamePattern.cs" />
-    <Compile Include="Banshee.Renamer\SimplePattern.cs" />
-    <Compile Include="Banshee.Renamer\IFilenamePatternCompiler.cs" />
-    <Compile Include="Banshee.Renamer\FilenamePatterns.cs" />
-    <Compile Include="Banshee.Renamer\SimplePatternCompiler.cs" />
     <Compile Include="Banshee.Renamer\RenamerWindow.cs" />
-    <Compile Include="Banshee.Renamer\PatternStorage.cs" />
     <Compile Include="Banshee.Renamer\TrackInfoParameterMap.cs" />
+    <Compile Include="Banshee.Renamer\ITemplateEngine.cs" />
+    <Compile Include="Banshee.Renamer\ICompiledTemplate.cs" />
+    <Compile Include="Banshee.Renamer\TemplateCompilationException.cs" />
+    <Compile Include="Banshee.Renamer\SongFilenameTemplates.cs" />
+    <Compile Include="Banshee.Renamer\TemplateStorage.cs" />
+    <Compile Include="Banshee.Renamer\TemplateEngineV1.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
