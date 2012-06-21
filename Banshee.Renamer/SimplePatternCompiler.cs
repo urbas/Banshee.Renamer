@@ -40,7 +40,7 @@ namespace Banshee.Renamer
     /// <para>
     /// Here is an example pattern for this creator:
     /// <code>
-    ///     "/some/directories/{artist}/{album}/{track number} - {artist} - {album} - {title}"
+    ///     "/some/directories/[artist]/[album]/[FC<{0:00} - >track number][artist] - [album] ([S<00>year]) - [title]"
     /// </code>
     /// </para>
     /// </summary>
@@ -334,6 +334,7 @@ namespace Banshee.Renamer
         internal const char DelimiterStart = '<';
         internal const char DelimiterEnd = '>';
         internal const string Header = "S<";
+        // TODO: Introduce 'SC<'
         internal const char AlignmentFormatStringDelimiter = ':';
         internal const string SyntaxOutline = "[S<format>parameter] or [S<alignment:format>parameter]";
 
