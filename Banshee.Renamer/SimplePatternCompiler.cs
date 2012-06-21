@@ -501,14 +501,24 @@ namespace Banshee.Renamer
             if (IsConditional && firstParameter == null) {
                 return string.Empty;
             }
-            // NOTE: We cannot reuse a pre-allocated array as this method may be
-            // called from multiple threads.
-            object[] values = new object[Parameters.Length];
-            values [0] = firstParameter;
-            for (int i = Parameters.Length - 1; i > 0; --i) {
-                values [i] = parameterMap (song, Parameters [i]);
+
+            // A small optimisation if there is a small number of parameters:
+            int len = Parameters.Length;
+            if (len == 1)
+                return string.Format(Format, firstParameter);
+            else if (len == 2) {
+                return string.Format(Format, firstParameter, Parameters[1]);
+            } else if (len == 3) {
+                return string.Format(Format, firstParameter, Parameters[1], Parameters[2]);
+            } else {
+                // NOTE: We cannot reuse a pre-allocated array as this method may be
+                // called from multiple threads.
+                object[] values = new object[Parameters.Length];
+                for (int i = Parameters.Length - 1; i > 0; --i) {
+                    values [i] = parameterMap (song, Parameters [i]);
+                }
+                return string.Format (Format, values);
             }
-            return string.Format (Format, values);
         }
 
         public override string ToString ()

@@ -58,6 +58,7 @@
     <Compile Include="Banshee.Renamer\FilenamePatterns.cs" />
     <Compile Include="Banshee.Renamer\SimplePatternCompiler.cs" />
     <Compile Include="Banshee.Renamer\RenamerWindow.cs" />
+    <Compile Include="Banshee.Renamer\PatternStorage.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>

@@ -47,19 +47,16 @@ namespace Banshee.Renamer
 
         #region Constants and Static Fields
         public const string Name = "Renamer";
+        /// <summary>
+        /// The namespace used by this plugin for all its configuration.
+        /// This value may be used in <see cref="ConfigurationClient"/>
+        /// </summary>
+        internal const string ConfigurationNamespace = "plugins.renamer";
         #endregion
 
         #region Constructors
         public RenamerService ()
         {
-        }
-        #endregion
-
-        #region Static Private Helper Properties
-        private static InterfaceActionService BansheeActionService {
-            get {
-                return ServiceManager.Get<InterfaceActionService> ();
-            }
         }
         #endregion
 
@@ -115,11 +112,6 @@ namespace Banshee.Renamer
             } catch (PatternCompilationException pcex) {
                 Log.Error (pcex.Message);
             }
-
-            string str = ConfigurationClient.Get<string> (@"plugins.renamer", "stuff", "Drekec!");
-            Hyena.Log.Information (str);
-            ConfigurationClient.Set<string> (@"plugins.renamer", "stuff", str + " IT!");
-
 
             RenamerWindow window = new RenamerWindow ();
             window.ShowAll ();
@@ -231,6 +223,14 @@ namespace Banshee.Renamer
         void IDisposable.Dispose ()
         {
             DisposeUi ();
+        }
+        #endregion
+
+        #region Static Private Helper Properties
+        private static InterfaceActionService BansheeActionService {
+            get {
+                return ServiceManager.Get<InterfaceActionService> ();
+            }
         }
         #endregion
     }

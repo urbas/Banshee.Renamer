@@ -8,6 +8,7 @@ SOURCES =  \
 	Banshee.Renamer/ICompiledFilenamePattern.cs \
 	Banshee.Renamer/IFilenamePatternCompiler.cs \
 	Banshee.Renamer/PatternCompilationException.cs \
+	Banshee.Renamer/PatternStorage.cs \
 	Banshee.Renamer/RenamerService.cs \
 	Banshee.Renamer/RenamerWindow.cs \
 	Banshee.Renamer/SimplePattern.cs \
