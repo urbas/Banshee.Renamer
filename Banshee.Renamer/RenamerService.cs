@@ -96,7 +96,7 @@ namespace Banshee.Renamer
                     }
                 };
 
-                var pattern = sfc.CompileTemplate (@"[FC<{0:00} - >track number][artist] - [album] - [title]", parameterMap);
+                var pattern = sfc.CompileTemplate (@"[CC<{0:00} - {1} - >track number,artist][C<{0:00} - {1} - >track number,artist][artist] - [album] - [title] - [F<0000>track number][FC<0000>track number]", parameterMap);
 
                 Hyena.Log.Information ("================ Traversing songs =================");
                 StringBuilder sb = new StringBuilder ();

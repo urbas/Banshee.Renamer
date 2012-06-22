@@ -39,7 +39,7 @@ namespace Banshee.Renamer
     public static class SongFilenameTemplates
     {
         #region Registry Container
-        private static readonly Dictionary<string, SongFilenameEngine> registry = new Dictionary<string, SongFilenameEngine> ();
+        private static readonly Dictionary<string, ITemplateEngine<DatabaseTrackInfo>> registry = new Dictionary<string, ITemplateEngine<DatabaseTrackInfo>> ();
         #endregion
 
         #region Registry Initialisation
@@ -59,7 +59,7 @@ namespace Banshee.Renamer
         /// <exception cref="TemplateCompilationException">if the compilation failed
         /// for any reason. The message of this exception can be displayed to the
         /// user.</exception>
-        public static ISongFilenameTemplate CompileTemplate (string compilerName, string pattern)
+        public static ICompiledTemplate<DatabaseTrackInfo> CompileTemplate (string compilerName, string pattern)
         {
             var compiler = GetTemplateEngine (compilerName);
             if (compiler == null) {
@@ -77,9 +77,9 @@ namespace Banshee.Renamer
         /// <param name='name'>
         /// The name of the filename pattern compiler to fetch.
         /// </param>
-        public static SongFilenameEngine GetTemplateEngine (string name)
+        public static ITemplateEngine<DatabaseTrackInfo> GetTemplateEngine (string name)
         {
-            SongFilenameEngine creator;
+            ITemplateEngine<DatabaseTrackInfo> creator;
             return registry.TryGetValue (name, out creator) ? creator : null;
         }
 
@@ -95,6 +95,7 @@ namespace Banshee.Renamer
     }
 
     #region Song Filename Specialised Classes (public)
+    /*
     /// <summary>
     /// Template engines of this type specialise for the construction of
     /// filenames for songs.
@@ -109,7 +110,7 @@ namespace Banshee.Renamer
     /// </summary>
     public interface ISongFilenameTemplate : ICompiledTemplate<DatabaseTrackInfo>
     {
-        new ISongFilenameEngine Owner { get; }
+        ISongFilenameEngine Owner { get; }
     }
 
     public abstract class SongFilenameEngine : ISongFilenameEngine
@@ -157,29 +158,29 @@ namespace Banshee.Renamer
         {
             output.Append(Source);
         }
-    }
+    }*/
     #endregion
 
     #region Dummy Template Engine (should be removed soon)
     /// <summary>
     /// Dummy pattern compiler. Should be removed soon.
     /// </summary>
-    internal class DummyPatternCompiler : SongFilenameEngine {
+    internal class DummyPatternCompiler : ITemplateEngine<DatabaseTrackInfo> {
 
         public const string CompilerName = "Dummy Template v1";
 
-        public override string Name {
+        public string Name {
             get {
                 return CompilerName;
             }
         }
 
-        public override ISongFilenameTemplate CompileTemplate (string template, LookupMap<DatabaseTrackInfo> parameterMap)
+        public ICompiledTemplate<DatabaseTrackInfo> CompileTemplate (string template, LookupMap<DatabaseTrackInfo> parameterMap)
         {
-            return new SongFilenameTemplate(template, this);
+            return new CompiledTemplate<DatabaseTrackInfo>(template);
         }
 
-        public override string Usage {
+        public string Usage {
             get {
                 return Catalog.GetString("Patterns of this type produce filenames literally the same as the input pattern.");
             }

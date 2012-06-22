@@ -38,6 +38,7 @@ namespace Banshee.Renamer
         private List<string> compilers = new List<string> ();
         private int defCompilerIndex = 0;
         private StoredTemplateNode currentPattern;
+        private string currentCompiler;
         #endregion
 
         #region Constructor
@@ -55,7 +56,7 @@ namespace Banshee.Renamer
             cbCompiler.Model = compilersModel;
 
             // Set a monotype and small font for the guide:
-            tvGuide.ModifyFont(Pango.FontDescription.FromString("monospace 8"));
+            tvGuide.ModifyFont (Pango.FontDescription.FromString ("monospace 8"));
 
             // Load all the stored patterns (from the persistent configuration):
             RefillStoredTemplatesStore ();
@@ -93,6 +94,16 @@ namespace Banshee.Renamer
                 }
             }
         }
+
+        private string CurrentCompiler {
+            get { return currentCompiler; }
+            set {
+                if (!string.Equals (value, currentCompiler)) {
+                    currentCompiler = value;
+                    OnCurrentCompilerChanged ();
+                }
+            }
+        }
         #endregion
 
         #region Event Handlers (private)
@@ -102,7 +113,21 @@ namespace Banshee.Renamer
         private void OnCompilerChanged (object source, EventArgs eargs)
         {
             UpdatePatternCompilerFromComboBox ();
-            UpdateGuide();
+        }
+
+        /// <summary>
+        /// Invoked when the CurrentCompiler property actually changes.
+        /// </summary>
+        private void OnCurrentCompilerChanged ()
+        {
+            UpdateGuide ();
+            if (CurrentPattern != null && !string.Equals (CurrentPattern.Engine, CurrentCompiler)) {
+                CurrentPattern.Engine = CurrentCompiler;
+            }
+            int idx = compilers.IndexOf(CurrentCompiler);
+            if (idx != cbCompiler.Active){
+                cbCompiler.Active = idx;
+            }
         }
 
         /// <summary>
@@ -110,9 +135,9 @@ namespace Banshee.Renamer
         /// </summary>
         private void OnCurrentPatternModified (object source, EventArgs eargs)
         {
-            // This can be called only when the user has changed the text entry, therefore don't update the text entry.
-            // Update the sample created filename:
-            // TODO:
+            if (CurrentPattern != null) {
+                CurrentCompiler = CurrentPattern.Engine;
+            }
         }
 
         /// <summary>
@@ -129,15 +154,13 @@ namespace Banshee.Renamer
 
             // Update the currently selected compiler:
             if (currentPattern == null) {
-                cbCompiler.Active = defCompilerIndex;
+                CurrentCompiler = compilers[defCompilerIndex];
             } else {
-                cbCompiler.Active = compilers.IndexOf (currentPattern.Engine);
+                CurrentCompiler = currentPattern.Engine;
             }
 
-            UpdateGuide();
-
             // Focus on the entry field:
-            entryPattern.GrabFocus();
+            entryPattern.GrabFocus ();
         }
 
         /// <summary>
@@ -205,9 +228,7 @@ namespace Banshee.Renamer
         #region Update Model From UI (private)
         private void UpdatePatternCompilerFromComboBox ()
         {
-            if (CurrentPattern != null && !string.Equals (CurrentPattern.Engine, compilers [cbCompiler.Active])) {
-                CurrentPattern.Engine = compilers [cbCompiler.Active];
-            }
+            CurrentCompiler = compilers [cbCompiler.Active];
         }
 
         private void UpdatePatternFromEntry ()
@@ -219,25 +240,25 @@ namespace Banshee.Renamer
         #endregion
 
         #region UI Update Methods (private)
-        private void UpdateGuide()
+        private void UpdateGuide ()
         {
-            StringBuilder sb = new StringBuilder();
-            sb.Append(Catalog.GetString("=========== List of parameters ===========\n"));
+            StringBuilder sb = new StringBuilder ();
+            sb.Append (Catalog.GetString ("=========== List of parameters ===========\n\n"));
             // TODO: Add the list of parameters:
             var knownParams = TrackInfoParameterMap.Parameters;
             foreach (var param in knownParams) {
-                sb.Append("-   ").Append(param).Append(": ").Append(TrackInfoParameterMap.GetDescription(param)).Append('\n');
+                sb.Append ("-   ").Append (param).Append (": ").Append (TrackInfoParameterMap.GetDescription (param)).Append ('\n');
             }
 
             // Now append the guide for the currently chosen compiler:
-            if (CurrentPattern != null) {
-                var compiler = SongFilenameTemplates.GetTemplateEngine(CurrentPattern.Engine);
+            if (CurrentCompiler != null) {
+                var compiler = SongFilenameTemplates.GetTemplateEngine (CurrentCompiler);
                 if (compiler != null) {
-                    sb.Append(Catalog.GetString("\n=========== Template usage ===========\n\n"));
-                    sb.Append(compiler.Usage);
+                    sb.Append (Catalog.GetString ("\n=========== Template usage ===========\n\n"));
+                    sb.Append (compiler.Usage);
                 }
             }
-            tvGuide.Buffer.Text = sb.ToString();
+            tvGuide.Buffer.Text = sb.ToString ();
         }
         #endregion
 

@@ -32,7 +32,7 @@ namespace Banshee.Renamer
     /// Templates are strings that contain placeholders which in turn are supposed to be replaced by data extracted from a given object (the data source).
     /// Compiled templates do exactly this but they have been compiled from one such 'template string' by a template engine for efficiency purposes.
     /// </summary>
-    public interface ICompiledTemplate<T>
+    public interface ICompiledTemplate<in T>
     {
         /// <summary>
         /// Gets the 'template string' that gave rise to this compiled pattern.
@@ -40,14 +40,31 @@ namespace Banshee.Renamer
         string Source { get; }
 
         /// <summary>
-        /// The template engine that created this pattern.
-        /// </summary>
-        ITemplateEngine<T> Owner { get; }
-
-        /// <summary>
         /// Creates a string by filling out placeholders with data provided by the data source.
         /// </summary>
         void CreateString(StringBuilder output, T dataSource);
+    }
+
+    /// <summary>
+    /// A simple and stupid implementation of the compiled template interface.
+    /// Can be used by implementors for simplicity sake.
+    /// </summary>
+    public class CompiledTemplate<T> : ICompiledTemplate<T>
+    {
+        public CompiledTemplate(string source)
+        {
+            Source = source;
+        }
+
+        public string Source {
+            get;
+            private set;
+        }
+
+        public virtual void CreateString (StringBuilder output, T dataSource)
+        {
+            output.Append(Source);
+        }
     }
 }
 

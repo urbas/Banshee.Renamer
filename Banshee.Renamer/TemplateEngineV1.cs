@@ -1,4 +1,4 @@
-// 
+//
 // TemplateEngineV1.cs
 // 
 // Author:
@@ -23,7 +23,6 @@
 // LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 // OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 // THE SOFTWARE.
-
 using System;
 using System.Text.RegularExpressions;
 using Hyena;
@@ -31,12 +30,13 @@ using Banshee.Collection.Database;
 using System.Collections.Generic;
 using Mono.Unix;
 using System.Text;
+using System.Collections.ObjectModel;
 
 namespace Banshee.Renamer
 {
-    #region Engine
+    #region TemplateV1 Engine
     /// <summary>
-    /// A simple `filename creator` implementation.
+    /// A simple `template engine` implementation.
     ///
     /// <para>
     /// Here is an example pattern for this creator:
@@ -45,542 +45,584 @@ namespace Banshee.Renamer
     /// </code>
     /// </para>
     /// </summary>
-    public class TemplateEngineV1 : SongFilenameEngine
+    public class TemplateEngineV1 : ITemplateEngine<DatabaseTrackInfo>
     {
-        public const string CompilerName = "Renamer Template v1";
-        private const string ExamplePattern3 = @"[directory]/[FC<{0:00} - >track number][artist] - [album] - [title]";
-        private const string ExamplePattern2 = @"[directory]/[S<00>track number] - [artist] - [album] - [title]";
-        private const string ExamplePattern1 = @"[home]/Music/[artist] - [album] - [title]";
+        public const string CompilerName = "TemplateV1";
 
-        public override ISongFilenameTemplate CompileTemplate (string pattern, LookupMap<DatabaseTrackInfo> dataLookupMap)
+        public ICompiledTemplate<DatabaseTrackInfo> CompileTemplate (string pattern, LookupMap<DatabaseTrackInfo> dataLookupMap)
         {
-            SfcPattern compiledPattern = new SfcPattern (pattern, this, dataLookupMap);
-            return compiledPattern;
+            return new TemplateV1<DatabaseTrackInfo> (pattern, dataLookupMap);
         }
 
-        public override string Name {
+        public string Name {
             get {
                 return CompilerName;
             }
         }
 
-        public override string Usage {
+        public string Usage {
             get {
                 return string.Format (Catalog.GetString (
                     "Template engine: `{0}`\n" +
                     "\n" +
                     "The pattern may include template placeholders with the following syntax:\n" +
                     "\n" +
-                    "-   {1}: simple parameter (it's interpolated with track's info directly)\n" +
-                    "-   {2}: formatted parameter (the track's is formatted using the .NET string formatting syntax),\n" +
-                    "-   {3}: formatted multi-parameter (also using the .NET format syntax) where the `FC` means that an empty string will be produced if the first parameter is `null`.\n" +
+                    "-   [parameter name]: simple parameter (it is interpolated with track's info directly).\n" +
+                    "-   [F<format>parameter name]: formatted parameter. Uses .NET's format string.\n" +
+                    "-   [FC<format>parameter name]: same as above but not interpolated if parameter is not given for the song.\n" +
+                    "-   [C<format>P1,P2,...]: complex formatted parameter. Uses  .NET's composite format syntax.\n" +
+                    "-   [CC<format>P1,P2,...]: same as above but not interpolated if parameter is not given for the song.\n" +
                     "\n" +
                     "Some examples:\n" +
                     "\n" +
-                    "-   {4}\n" +
-                    "-   {5}\n" +
-                    "-   {6}"
-                    ), Name, SfcParameter.SyntaxOutline, SfcFormattedParameter.SyntaxOutline, SfcMultiFormattedParameter.SyntaxOutline, ExamplePattern1, ExamplePattern2, ExamplePattern3);
+                    @"-   [home]/Music/[artist] - [album] - [title]" + "\n" +
+                    @"-   [directory]/[F<00>track number] - [artist] - [album] - [title]" + "\n" +
+                    @"-   [directory]/[CC<{{0:00}} - >track number][artist] - [album] - [title]"
+                    ), Name);
             }
         }
     }
-    #endregion
 
-    #region Compiled Template
-    /// <summary>
-    /// This class contains the main part of the filename generation
-    /// and pattern parsing and compilation.
-    /// Sfc stands for 'simple filename creator'.
-    /// </summary>
-    internal sealed class SfcPattern : SongFilenameTemplate
+    public class TemplateV1<T> : CompiledTemplate<T>
     {
-        #region Private Compiled State (instance)
-        private List<SfcSegment> segments = new List<SfcSegment> ();
+        #region Fields
+        private List<TemplateSegmentV1<T>> segments;
+        public const char EscapeChar = '\\';
         #endregion
 
         #region Constructors
-        internal SfcPattern (string sourcePattern, TemplateEngineV1 owner, LookupMap<DatabaseTrackInfo> dataLookupMap) : base(sourcePattern, owner)
+        public TemplateV1 (string template, LookupMap<T> dataLookupMap)
+            : base(template)
         {
-            segments = ExtractPatternSegments (sourcePattern, dataLookupMap);
+            TemplateCompilerV1<T> compiler = new TemplateCompilerV1<T> (template, dataLookupMap);
+            compiler.Compile ();
+            this.segments = compiler.Segments;
         }
         #endregion
 
-        #region ITemplateEngine implementation
-        public override void CreateString (System.Text.StringBuilder output, DatabaseTrackInfo song)
+        #region ICompiledTemplate Implementation
+        public override void CreateString (StringBuilder output, T dataSource)
         {
             int segmentsCount = segments.Count;
             for (int i = 0; i < segmentsCount; i++) {
-                output.Append (segments [i].ToString (song));
+                segments [i].ToStringAppend (output, dataSource);
             }
-        }
-        #endregion
-
-        #region Parsing and Compilation Methods (static)
-        private const char EscapeCharacter = '\\';
-        private const char ParamStartCharacter = '[';
-        private const char ParamEndCharacter = ']';
-
-        /// <summary>
-        /// Just collecting text...
-        /// </summary>
-        private static void processState0 (string sourcePattern, int index, StringBuilder sb, ref int state)
-        {
-            char curChar = sourcePattern [index];
-            switch (curChar) {
-            case EscapeCharacter:
-                state = 1;
-                break;
-            case ParamStartCharacter:
-                state = 2;
-                break;
-            default:
-                sb.Append (curChar);
-                break;
-            }
-        }
-
-        /// <summary>
-        /// The previous character was the escape character and we are in text collection mode.
-        /// </summary>
-        private static void processState1 (string sourcePattern, int index, StringBuilder sb, ref int state)
-        {
-            char curChar = sourcePattern [index];
-            switch (curChar) {
-            case EscapeCharacter:
-            case ParamStartCharacter:
-                sb.Append (curChar);
-                state = 0;
-                break;
-            default:
-                throw new TemplateCompilationException (Catalog.GetString ("An illegal escape sequence."), sourcePattern, index);
-            }
-        }
-
-        /// <summary>
-        /// We are in a parameter!
-        /// </summary>
-        private static void processState2 (string sourcePattern, int index, StringBuilder sb, ref int state)
-        {
-            char curChar = sourcePattern [index];
-            switch (curChar) {
-            case EscapeCharacter:
-                state = 3;
-                break;
-            case ParamEndCharacter:
-                state = 0;
-                break;
-            default:
-                sb.Append (curChar);
-                break;
-            }
-        }
-
-        /// <summary>
-        /// The previous character was the escape character and we are in a parameter.
-        /// </summary>
-        private static void processState3 (string sourcePattern, int index, StringBuilder sb, ref int state)
-        {
-            char curChar = sourcePattern [index];
-            switch (curChar) {
-            case EscapeCharacter:
-            case ParamEndCharacter:
-                sb.Append (curChar);
-                state = 2;
-                break;
-            default:
-                throw new TemplateCompilationException (Catalog.GetString ("An illegal escape sequence."), sourcePattern, index);
-            }
-        }
-
-        /// <summary>
-        /// Extracts the pattern segments (the compiled version of the `sourcePattern`).
-        /// This method uses a finite state automaton parser.
-        /// TODO: The same should be done for parameter parsing.
-        /// </summary>
-        private static List<SfcSegment> ExtractPatternSegments (string sourcePattern, LookupMap<DatabaseTrackInfo> dataLookupMap)
-        {
-            var segments = new List<SfcSegment> ();
-
-            // If the source pattern is empty, don't do anything...
-            if (string.IsNullOrEmpty (sourcePattern)) {
-                return segments;
-            }
-
-            // Start consuming characters:
-            int patternLength = sourcePattern.Length;
-            StringBuilder sb = new StringBuilder (patternLength);
-            int state = 0;
-            int textStartIndex = 0;
-            for (int curIndex = 0; curIndex < patternLength; curIndex++) {
-                switch (state) {
-                case 0: // We are accepting text...
-                    processState0 (sourcePattern, curIndex, sb, ref state);
-                    if (state == 2) {
-                        // We have transitioned to a parameter. Put the text segment in:
-                        if (sb.Length > 0) {
-                            segments.Add (CreateLiteralSegment (sourcePattern, textStartIndex, sb.ToString ()));
-                            sb.Clear ();
-                        }
-                        // Take a not of where the parameter started
-                        textStartIndex = curIndex;
-                    }
-                    break;
-                case 1: // We are accepting text and the previous character was an escape character!
-                    processState1 (sourcePattern, curIndex, sb, ref state);
-                    break;
-                case 2: // We are in a parameter...
-                    processState2 (sourcePattern, curIndex, sb, ref state);
-                    if (state == 0) {
-                        // We have transitioned back to text again. Put the parameter segment in:
-                        segments.Add (CreateParameterSegment (sourcePattern, textStartIndex, sb.ToString ()));
-                        sb.Clear ();
-                        textStartIndex = curIndex + 1;
-                    }
-                    break;
-                case 3: // We are in a parameter and the previous character was an escape character!
-                    processState3 (sourcePattern, curIndex, sb, ref state);
-                    break;
-                }
-            }
-
-            // We have come to the end. Act according to which state we were last in:
-            switch (state) {
-            case 0: // We were collecting text. Just add whatever is in the SB...
-                if (sb.Length > 0) {
-                    segments.Add (CreateLiteralSegment (sourcePattern, textStartIndex, sb.ToString ()));
-                }
-                break;
-            case 1:
-            case 3:
-                throw new TemplateCompilationException (Catalog.GetString ("The pattern contains a dangling escape sequence."), sourcePattern, patternLength);
-            default:
-                throw new TemplateCompilationException (Catalog.GetString ("The parameter was opened but never closed."), sourcePattern, textStartIndex + 1);
-            }
-
-            // All the segments have been collected. We only have to compile them now...
-            for (int i = segments.Count - 1; i >= 0; --i) {
-                segments [i].Compile (dataLookupMap);
-            }
-
-            return segments;
-        }
-        #endregion
-
-        #region Factory Methods
-        public static SfcSegment CreateLiteralSegment (string sourcePattern, int indexInSource, string content)
-        {
-            return new SfcSegment (sourcePattern, indexInSource, content);
-        }
-
-        /// <summary>
-        /// Creates the parameter segment.
-        /// </summary>
-        /// <param name='content'>
-        /// This should be the unescaped content of the parameter notation. E.g.: '[parameter content]'.
-        /// Depending on the `parameter content`, this method chooses a specific parameter segment.
-        /// For example, if the content starts with 'S<' then this method will create and return an SfcFormattedParameter.
-        /// </param>
-        public static SfcSegment CreateParameterSegment (string sourcePattern, int indexInSource, string content)
-        {
-            return SfcMultiFormattedParameter.ConstructParameter (sourcePattern, indexInSource, content) ??
-                SfcFormattedParameter.ConstructParameter (sourcePattern, indexInSource, content) ??
-                new SfcParameter (sourcePattern, indexInSource, content);
         }
         #endregion
     }
     #endregion
 
-    #region Segments
-    internal class SfcSegment
+    #region TemplateV1 Segments
+    /// <summary>
+    /// A TemplateV1 template consists of a linear sequence of segments. When creating strings
+    /// from the template segments are simply concatenated together.
+    /// There are two basic types of TemplateV1 segments: literal segments and placeholder segments.
+    /// Literal segments are pure text segments and do not get interpolated with data from
+    /// the data source. Placeholders, on the other hand, are interpolated before they are concatenated.
+    /// Interpolation in this context means that data are fetched from the data source and placed
+    /// on the right places of the placeholder to produce a string. Placeholders are essentially
+    /// parametrised by the data source.
+    /// </summary>
+    public interface ITemplateSegmentV1<in T>
     {
-        #region Constructor
-        public SfcSegment (string sourcePattern, int indexInSource, string content)
-        {
-            IndexInSource = indexInSource;
-            SourcePattern = sourcePattern;
-            Content = content;
-        }
-        #endregion
+        string ParentTemplate { get; }
 
-        #region Data
-        public readonly int IndexInSource;
+        int IndexInTemplate { get; }
 
-        public string SourcePattern { get; private set; }
+        string ToString (T dataSource);
 
-        public string Content { get; private set; }
-        #endregion
-
-        #region Customisable Behaviour
-        public virtual string ToString (DatabaseTrackInfo song)
-        {
-            return Content;
-        }
-
-        internal virtual void Compile (LookupMap<DatabaseTrackInfo> dataLookupMap)
-        {
-        }
-
-        public override string ToString ()
-        {
-            return Content;
-        }
-        #endregion
+        void ToStringAppend (StringBuilder output, T dataSource);
     }
 
-    internal class SfcParameter : SfcSegment
+    public abstract class TemplateSegmentV1<T> : ITemplateSegmentV1<T>
     {
-        internal const string SyntaxOutline = @"[parameter name]";
-
-        /// <summary>
-        /// Initializes a new instance of the <see cref="Banshee.Renamer.SfcParameter"/> class.
-        /// </summary>
-        /// <param name='content'>
-        /// Content.
-        /// </param>
-        /// <param name='indexInSource'>
-        /// Index in the original raw (escaped) source pattern (the index of the '{' character).
-        /// </param>.
-        public SfcParameter (string sourcePattern, int indexInSource, string content) : base(sourcePattern, indexInSource, content)
+        public TemplateSegmentV1 (string parentTemplate, int indexInTemplate)
         {
+            ParentTemplate = parentTemplate;
+            IndexInTemplate = indexInTemplate;
         }
 
-        public Lookup<DatabaseTrackInfo> ParameterLookup { get; private set; }
+        public string ParentTemplate { get; private set; }
 
-        internal override void Compile (LookupMap<DatabaseTrackInfo> dataLookupMap)
+        public int IndexInTemplate { get; private set; }
+
+        public abstract string ToString (T dataSource);
+
+        public virtual void ToStringAppend (StringBuilder output, T dataSource)
         {
-            ParameterLookup = dataLookupMap (Content);
-            if (ParameterLookup == null) {
-                throw new TemplateCompilationException (string.Format (Catalog.GetString ("The parameter '{0}' is unknown."), Content), SourcePattern, IndexInSource);
-            }
+            output.Append (ToString (dataSource));
         }
 
-        public override string ToString (DatabaseTrackInfo song)
+        protected TemplateCompilationException CreateException (string message, Exception cause = null)
         {
-            return (ParameterLookup (song) ?? "").ToString ();
-        }
-
-        public override string ToString ()
-        {
-            return "[" + Content + "]";
+            return new TemplateCompilationException (message, ParentTemplate, IndexInTemplate, cause);
         }
     }
 
-    internal class SfcFormattedParameter : SfcSegment
+    public sealed class LiteralSegmentV1<T> : TemplateSegmentV1<T>
     {
-        internal const char DelimiterStart = '<';
-        internal const char DelimiterEnd = '>';
-        internal const string Header = "S<";
-        // TODO: Introduce 'SC<'
-        internal const char AlignmentFormatStringDelimiter = ':';
-        internal const string SyntaxOutline = "[S<format>parameter name] or [S<alignment:format>parameter name]";
-
-        internal static SfcSegment ConstructParameter (string wholePattern, int indexInPattern, string parameterContent)
+        public LiteralSegmentV1 (string rawContent, string parentTemplate, int indexInTemplate)
+            : base(parentTemplate, indexInTemplate)
         {
-            if (parameterContent.StartsWith (Header)) {
-                return new SfcFormattedParameter (wholePattern, indexInPattern, parameterContent);
-            } else {
-                return null;
+            RawContent = rawContent;
+        }
+
+        public override string ToString (T dataSource)
+        {
+            return RawContent;
+        }
+
+        public override void ToStringAppend (StringBuilder output, T dataSource)
+        {
+            output.Append (RawContent);
+        }
+
+        public string RawContent { get; private set; }
+    }
+
+    /// <summary>
+    /// A placeholder in TemplateV1 looks like this:
+    /// -   [parameter name part].
+    /// -   [header part|parameter name part].
+    /// -   [header part&lt;format part&gt;parameter name part].
+    /// All parts of the parameter support the following two escape sequences: '\\' and '\]'. Character '[' is
+    /// valid anywhere within the placeholder.
+    /// The 'header part' may be empty and may not contain characters '|' or '&lt;' (they can be escaped via '\|' and '\&lt;').
+    /// The 'format part' may be empty and not contain the character '&lt;' (which can be escaped via '\&lt;').
+    /// The 'parameter name part' may be empty and is a ',' (comma) separated list of simple parameter names.
+    /// </summary>
+    public abstract class PlaceholderV1<T> : TemplateSegmentV1<T>
+    {
+        public const char PlaceholderStartChar = '[';
+        public const char PlaceholderEndChar = ']';
+        public const char FormatStartChar = '<';
+        public const char FormatEndChar = '>';
+        public const char HeaderParametersDelimiter = '|';
+        public const char ParameterDelimiter = ',';
+
+        protected PlaceholderV1 (string parentTemplate, int indexInTemplate, LookupMap<T> dataLookupMap, string headerPart, string formatPart, params string[] parameterNamePart)
+            : base(parentTemplate, indexInTemplate)
+        {
+            DataLookupMap = dataLookupMap;
+            Header = headerPart;
+            Format = formatPart;
+            if (parameterNamePart == null || parameterNamePart.Length < 1) {
+                throw CreateException (Catalog.GetString ("A placeholder requires at least one parameter name."));
+            }
+            RawParameterNames = parameterNamePart;
+            ParameterLookups = new Lookup<T>[parameterNamePart.Length];
+            for (int i = 0; i < parameterNamePart.Length; i++) {
+                ParameterLookups [i] = dataLookupMap (parameterNamePart [i]);
+                if (ParameterLookups [i] == null) {
+                    throw CreateException (string.Format (Catalog.GetString ("Unknown parameter '{0}'."), parameterNamePart [i]));
+                }
             }
         }
 
-        public SfcFormattedParameter (string sourcePattern, int indexInSource, string content) : base(sourcePattern, indexInSource, content)
-        {
-        }
+        public LookupMap<T> DataLookupMap { get; private set; }
 
-        public string Alignment { get; private set; }
+        public string Header { get; private set; }
 
-        public string FormatString { get; private set; }
-        /// <summary>
-        /// The final format string. Can be used directly in string.Format(this.Format, singleObj).
-        /// </summary>
         public string Format { get; private set; }
 
-        public string ParameterName { get; private set; }
+        protected string[] RawParameterNames { get; private set; }
 
-        public Lookup<DatabaseTrackInfo> ParameterLookup { get; private set; }
-
-        internal override void Compile (LookupMap<DatabaseTrackInfo> dataLookupMap)
-        {
-            if (!Content.StartsWith (Header) || Content.LastIndexOf (DelimiterEnd) < Header.Length) {
-                throw new TemplateCompilationException (string.Format (Catalog.GetString ("This 'S-type' format parameter has an invalid syntax. Expected syntax: {0}"), SyntaxOutline), SourcePattern, IndexInSource);
-            }
-
-            string formatPart;
-            string parameters;
-            if (!SfcFormattedParameter.ExtractFormatAndParameters (DelimiterStart, DelimiterEnd, Content, out formatPart, out parameters)) {
-                throw new TemplateCompilationException (string.Format (Catalog.GetString ("This 'S-type' format parameter has an invalid syntax. Expected syntax: {0}"), SyntaxOutline), SourcePattern, IndexInSource);
-            }
-
-            // Extract the format string and the optional alignment.
-            int indexOfFormatDelimiter = formatPart.IndexOf (AlignmentFormatStringDelimiter);
-            if (indexOfFormatDelimiter < 0) {
-                FormatString = formatPart;
-            } else {
-                Alignment = formatPart.Substring (0, indexOfFormatDelimiter);
-                FormatString = formatPart.Substring (indexOfFormatDelimiter + 1);
-            }
-
-            // Compile the final format string. Can be used directly in string.Format().
-            if (string.IsNullOrEmpty (Alignment)) {
-                if (string.IsNullOrEmpty (FormatString)) {
-                    Format = "{0}";
-                } else {
-                    Format = "{0:" + FormatString + "}";
-                }
-            } else {
-                if (string.IsNullOrEmpty (FormatString)) {
-                    Format = "{0," + Alignment + "}";
-                } else {
-                    Format = "{0," + Alignment + ":" + FormatString + "}";
-                }
-            }
-
-            // Now store the name of the parameter:
-            ParameterName = parameters;
-            ParameterLookup = dataLookupMap (ParameterName);
-            if (ParameterLookup == null) {
-                throw new TemplateCompilationException (string.Format (Catalog.GetString ("The parameter '{0}' is unknown."), Content), SourcePattern, IndexInSource);
+        public ReadOnlyCollection<string> ParameterNames {
+            get {
+                return new ReadOnlyCollection<string> (RawParameterNames);
             }
         }
 
-        public override string ToString (DatabaseTrackInfo song)
-        {
-            return string.Format (Format, ParameterLookup (song));
-        }
-
-        public override string ToString ()
-        {
-            return "[S<" + Format + ">" + ParameterName + "]";
-        }
+        protected Lookup<T>[] ParameterLookups { get; private set; }
 
         /// <summary>
-        /// Extracts the format and parameters if the string is of the following format:
-        ///     HEADER'startDelimiter'format'endDelimiter'parameters
+        /// This is a factory method. It returns the right placeholer based on its header.
         /// </summary>
-        public static bool ExtractFormatAndParameters (char startDelimiter, char endDelimiter, string content, out string format, out string parameters)
+        public static PlaceholderV1<T> CreatePlaceholder (string parentTemplate, int indexInTemplate, LookupMap<T> dataLookupMap, string headerPart, string formatPart, params string[] parameterNames)
         {
-            int idxFormatEnd = content.LastIndexOf (endDelimiter);
-            int idxFormatStart = content.IndexOf (startDelimiter);
-            if (idxFormatEnd > idxFormatStart) {
-                format = content.Substring (idxFormatStart + 1, idxFormatEnd - idxFormatStart - 1);
-                parameters = content.Substring (idxFormatEnd + 1);
-                return true;
+            PlaceholderCreatorV1 ph;
+            headerPart = headerPart ?? "";
+            if (placeholderTypeRegistry.TryGetValue (headerPart, out ph)) {
+                return ph (parentTemplate, indexInTemplate, dataLookupMap, headerPart, formatPart, parameterNames);
             } else {
-                format = null;
-                parameters = null;
-                return false;
+                throw new TemplateCompilationException (string.Format (Catalog.GetString ("Unknown placeholder type '{0}'."), headerPart), parentTemplate, indexInTemplate);
             }
+        }
+
+        private delegate PlaceholderV1<T> PlaceholderCreatorV1 (string parentTemplate,int indexInTemplate,LookupMap<T> dataLookupMap,string headerPart,string formatPart,params string[] parameterNames);
+
+        private static readonly Dictionary<string, PlaceholderCreatorV1> placeholderTypeRegistry = new Dictionary<string, PlaceholderCreatorV1> ();
+
+        static PlaceholderV1 ()
+        {
+            placeholderTypeRegistry.Add ("", (pt, i, dlm, h, f, ps) => new SimplePlaceholderV1<T> (pt, i, dlm, h, f, ps));
+            placeholderTypeRegistry.Add ("F", (pt, i, dlm, h, f, ps) => new SimpleFormatPlaceholderV1<T> (false, pt, i, dlm, h, f, ps));
+            placeholderTypeRegistry.Add ("FC", (pt, i, dlm, h, f, ps) => new SimpleFormatPlaceholderV1<T> (true, pt, i, dlm, h, f, ps));
+            placeholderTypeRegistry.Add ("C", (pt, i, dlm, h, f, ps) => new FormatPlaceholderV1<T> (false, pt, i, dlm, h, f, ps));
+            placeholderTypeRegistry.Add ("CC", (pt, i, dlm, h, f, ps) => new FormatPlaceholderV1<T> (true, pt, i, dlm, h, f, ps));
         }
     }
 
-    internal class SfcMultiFormattedParameter : SfcSegment
+    public class SimplePlaceholderV1<T> : PlaceholderV1<T>
     {
-        internal const char DelimiterStart = '<';
-        internal const char DelimiterEnd = '>';
-        internal static readonly char[] ParameterDelimiter = new char[]{','};
-        internal const string Header1 = "F<";
-        internal const string Header2 = "FC<";
-        internal const string SyntaxOutline = "[F<format>P1,P2,...] or [FC<format>P1,P2,...]";
 
-        internal static SfcSegment ConstructParameter (string wholePattern, int indexInPattern, string parameterContent)
+        public SimplePlaceholderV1 (string parentTemplate, int indexInTemplate, LookupMap<T> dataLookupMap, string headerPart, string formatPart, params string[] parameterNamePart)
+            : base(parentTemplate, indexInTemplate, dataLookupMap, headerPart, formatPart, parameterNamePart)
         {
-            if (parameterContent.StartsWith (Header1) || parameterContent.StartsWith (Header2)) {
-                return new SfcMultiFormattedParameter (wholePattern, indexInPattern, parameterContent);
-            } else {
-                return null;
+            if (parameterNamePart.Length != 1) {
+                throw CreateException (Catalog.GetString ("A simple placeholder requires a single parameter name."));
             }
+            SimpleLookup = ParameterLookups [0];
         }
 
-        public SfcMultiFormattedParameter (string sourcePattern, int indexInSource, string content) : base(sourcePattern, indexInSource, content)
+        protected Lookup<T> SimpleLookup { get; private set; }
+
+        public override string ToString (T dataSource)
         {
+            object data = SimpleLookup (dataSource);
+            return data == null ? "" : data.ToString ();
         }
+    }
 
+    public class FormatPlaceholderV1<T> : PlaceholderV1<T>
+    {
         public bool IsConditional { get; private set; }
 
-        public string Format { get; private set; }
-
-        public string ParametersString { get; private set; }
-
-        public string[] Parameters { get; private set; }
-
-        public Lookup<DatabaseTrackInfo>[] ParameterLookups { get; private set; }
-
-        internal override void Compile (LookupMap<DatabaseTrackInfo> dataLookupMap)
+        public FormatPlaceholderV1 (bool conditional, string parentTemplate, int indexInTemplate, LookupMap<T> dataLookupMap, string headerPart, string formatPart, params string[] parameterNamePart)
+            : base(parentTemplate, indexInTemplate, dataLookupMap, headerPart, formatPart, parameterNamePart)
         {
-            if (Content.StartsWith (Header1)) {
-                IsConditional = false;
-            } else if (Content.StartsWith (Header2)) {
-                IsConditional = true;
-            } else {
-                throw new TemplateCompilationException (string.Format (Catalog.GetString ("This 'F-type' format parameter has an invalid syntax. Expected syntax: {0}"), SyntaxOutline), SourcePattern, IndexInSource);
-            }
-
-            string format;
-            string parameters;
-            if (!SfcFormattedParameter.ExtractFormatAndParameters (DelimiterStart, DelimiterEnd, Content, out format, out parameters)) {
-                throw new TemplateCompilationException (string.Format (Catalog.GetString ("This 'F-type' format parameter has an invalid syntax. Expected syntax: {0}"), SyntaxOutline), SourcePattern, IndexInSource);
-            }
-            // Extract the format string:
-            Format = format;
-            ParametersString = parameters;
-            // Now extract the parameter names (delimited with commas).
-            Parameters = parameters.Split (ParameterDelimiter, StringSplitOptions.RemoveEmptyEntries);
-
-            if (Parameters == null || Parameters.Length < 1) {
-                throw new TemplateCompilationException (string.Format (Catalog.GetString ("The 'F-type' format requires at least one parameter. Expected syntax: {0}"), SyntaxOutline), SourcePattern, IndexInSource);
-            }
-
             // Test out the format:
-            object[] dummyValues = new object[Parameters.Length];
             try {
-                string.Format (Format, dummyValues);
-            } catch (FormatException fex) {
-                throw new TemplateCompilationException (string.Format (Catalog.GetString ("The format '{0}' is not a valid .NET string format. Format error: '{1}'"), Format, fex.Message), SourcePattern, IndexInSource);
+                string.Format (formatPart, parameterNamePart);
+            } catch (Exception ex) {
+                throw CreateException (Catalog.GetString ("The placeholder has an invalid format."), ex);
             }
-            ParameterLookups = new Lookup<DatabaseTrackInfo>[Parameters.Length];
-            for (int i = 0; i < Parameters.Length; i++) {
-                ParameterLookups [i] = dataLookupMap (Parameters [i]);
-                if (ParameterLookups [i] == null) {
-                    throw new TemplateCompilationException (string.Format (Catalog.GetString ("The parameter '{0}' is unknown."), Parameters [i]), SourcePattern, IndexInSource);
-                }
-            }
+            IsConditional = conditional;
         }
 
-        public override string ToString (DatabaseTrackInfo song)
+        public override string ToString (T dataSource)
         {
-            object firstParameter = ParameterLookups [0] (song);
+            object firstParameter = ParameterLookups [0] (dataSource);
             if (IsConditional && firstParameter == null) {
                 return string.Empty;
             }
 
             // A small optimisation if there is a small number of parameters:
-            int len = Parameters.Length;
+            int len = ParameterLookups.Length;
             if (len == 1) {
                 return string.Format (Format, firstParameter);
             } else if (len == 2) {
-                return string.Format (Format, firstParameter, ParameterLookups [1] (song));
+                return string.Format (Format, firstParameter, ParameterLookups [1] (dataSource));
             } else if (len == 3) {
-                return string.Format (Format, firstParameter, ParameterLookups [1] (song), ParameterLookups [2] (song));
+                return string.Format (Format, firstParameter, ParameterLookups [1] (dataSource), ParameterLookups [2] (dataSource));
             } else {
                 // NOTE: We cannot reuse a pre-allocated array as this method may be
                 // called from multiple threads.
-                object[] values = new object[Parameters.Length];
-                for (int i = Parameters.Length - 1; i > 0; --i) {
-                    values [i] = ParameterLookups [i] (song);
+                object[] values = new object[ParameterLookups.Length];
+                for (int i = ParameterLookups.Length - 1; i > 0; --i) {
+                    values [i] = ParameterLookups [i] (dataSource);
                 }
-                values[0] = firstParameter;
+                values [0] = firstParameter;
                 return string.Format (Format, values);
             }
         }
+    }
 
-        public override string ToString ()
+    public class SimpleFormatPlaceholderV1<T> : FormatPlaceholderV1<T>
+    {
+        public SimpleFormatPlaceholderV1 (bool conditional, string parentTemplate, int indexInTemplate, LookupMap<T> dataLookupMap, string headerPart, string formatPart, params string[] parameterNamePart)
+            : base(conditional, parentTemplate, indexInTemplate, dataLookupMap, headerPart, ProcessFormat(formatPart), parameterNamePart)
         {
-            if (IsConditional) {
-                return "[FC<" + Format + ">" + ParametersString + "]";
+            if (parameterNamePart == null || parameterNamePart.Length != 1) {
+                throw CreateException (Catalog.GetString ("A simple placeholder requires a single parameter name."));
+            }
+            SimpleLookup = ParameterLookups [0];
+        }
+
+        protected Lookup<T> SimpleLookup { get; private set; }
+
+        public override string ToString (T dataSource)
+        {
+            object data = SimpleLookup (dataSource);
+            return (data == null && IsConditional) ? "" : string.Format (Format, data);
+        }
+
+        private const char AlignmentFormatDelimiter = ':';
+
+        private static string ProcessFormat (string formatPart)
+        {
+            if (formatPart.IndexOf (AlignmentFormatDelimiter) < 0) {
+                return "{0:" + formatPart + "}";
             } else {
-                return "[F<" + Format + ">" + ParametersString + "]";
+                return "{0," + formatPart + "}";
             }
         }
+    }
+    #endregion
+
+    #region TemplateV1 Compiler
+    internal class TemplateCompilerV1<T>
+    {
+        #region State
+        private string inputTemplate;
+        private LookupMap<T> dataLookupMap;
+        private List<TemplateSegmentV1<T>> segments;
+        private int currentIndex = -1;
+        private int templateLength;
+        private int state = StateLiteral;
+        #region Per-Segment State
+        private StringBuilder buffer;
+        private string placeholderHeader = string.Empty;
+        private string placeholderFormat = string.Empty;
+        private List<string> parameterNames;
+        private int currentSegmentStartIndex = 0;
+        #endregion
+        #endregion
+
+        #region Public Interface
+        public TemplateCompilerV1 (string template, LookupMap<T> dataLookupMap)
+        {
+            if (dataLookupMap == null || template == null) {
+                throw new TemplateCompilationException (Catalog.GetString ("Non-null template string and data lookup map are required for a V1 template"));
+            }
+            inputTemplate = template;
+            this.dataLookupMap = dataLookupMap;
+            buffer = new StringBuilder ();
+            parameterNames = new List<string> ();
+            segments = new List<TemplateSegmentV1<T>> ();
+            templateLength = template.Length;
+        }
+
+        public List<TemplateSegmentV1<T>> Segments { get { return segments; } }
+
+        public void Compile ()
+        {
+            while (NextChar()) {
+                switch (state) {
+                case StateLiteral:
+                    state = processLiteral ();
+                    break;
+                case StateLiteralEscape:
+                    state = processLiteralEscape ();
+                    break;
+                case StatePlaceholderHeader:
+                    state = processPlaceholderHeader ();
+                    break;
+                case StatePlaceholderHeaderEscape:
+                    state = processPlaceholderHeaderEscape ();
+                    break;
+                case StatePlaceholderFormat:
+                    state = processPlaceholderFormat ();
+                    break;
+                case StatePlaceholderFormatEscape:
+                    state = processPlaceholderFormatEscape ();
+                    break;
+                case StatePlaceholderParameter:
+                    state = processPlaceholderParameter ();
+                    break;
+                case StatePlaceholderParameterEscape:
+                    state = processPlaceholderParameterEscape ();
+                    break;
+                default:
+                    throw new TemplateCompilationException (Catalog.GetString ("The Template V1 compiler sufferred an internal error, please report."), inputTemplate, currentIndex);
+                }
+            }
+        }
+        #endregion
+
+        #region Finite State Automaton (private)
+        private const int StateLiteral = 0;
+        private const int StateLiteralEscape = 1;
+        private const int StatePlaceholderHeader = 2;
+        private const int StatePlaceholderHeaderEscape = 3;
+        private const int StatePlaceholderFormat = 4;
+        private const int StatePlaceholderFormatEscape = 5;
+        private const int StatePlaceholderParameter = 6;
+        private const int StatePlaceholderParameterEscape = 7;
+
+        private char CurrentChar { get { return inputTemplate [currentIndex]; } }
+
+        private int CurrentIndex { get { return currentIndex; } }
+
+        private int CurrentSegmentStartIndex { get { return currentSegmentStartIndex; } }
+
+        private bool IsFinished { get { return currentIndex >= templateLength; } }
+
+        private bool NextChar ()
+        {
+            ++currentIndex;
+            return currentIndex < templateLength;
+        }
+
+        private void NextSegment ()
+        {
+            buffer.Clear ();
+            currentSegmentStartIndex = currentIndex;
+        }
+
+        private void ConsumeChar ()
+        {
+            buffer.Append (CurrentChar);
+        }
+
+        private string ConsumeBuffer ()
+        {
+            string bufferContent = buffer.ToString ();
+            buffer.Clear ();
+            return bufferContent;
+        }
+
+        private TemplateCompilationException CreateHereException (string message)
+        {
+            return new Banshee.Renamer.TemplateCompilationException (message, inputTemplate, CurrentIndex);
+        }
+
+        private void ConsumeSegment (TemplateSegmentV1<T> segment)
+        {
+            if (segment != null) {
+                segments.Add (segment);
+            }
+            NextSegment ();
+        }
+
+        private void ConsumeLiteralSegment ()
+        {
+            ConsumeSegment (buffer.Length > 0 ? new LiteralSegmentV1<T> (buffer.ToString (), inputTemplate, CurrentSegmentStartIndex) : null);
+        }
+
+        private void ConsumeParameter ()
+        {
+            parameterNames.Add (buffer.ToString ());
+            buffer.Clear ();
+        }
+
+        private void ConsumePlaceholder ()
+        {
+            ConsumeSegment (PlaceholderV1<T>.CreatePlaceholder (inputTemplate, CurrentSegmentStartIndex, dataLookupMap, placeholderHeader, placeholderFormat, parameterNames.ToArray ()));
+            placeholderFormat = string.Empty;
+            placeholderHeader = string.Empty;
+            parameterNames.Clear ();
+        }
+
+        private int processLiteral ()
+        {
+            switch (CurrentChar) {
+            case TemplateV1<T>.EscapeChar:
+                return StateLiteralEscape;
+            case PlaceholderV1<T>.PlaceholderStartChar:
+                ConsumeLiteralSegment ();
+                return StatePlaceholderHeader;
+            default:
+                ConsumeChar ();
+                return StateLiteral;
+            }
+        }
+
+        private int processLiteralEscape ()
+        {
+            switch (CurrentChar) {
+            case TemplateV1<T>.EscapeChar:
+            case PlaceholderV1<T>.PlaceholderStartChar:
+                ConsumeChar ();
+                return StateLiteral;
+            default:
+                throw CreateHereException (Catalog.GetString ("An illegal escape sequence."));
+            }
+        }
+
+        private int processPlaceholderHeader ()
+        {
+            switch (CurrentChar) {
+            case TemplateV1<T>.EscapeChar:
+                return StatePlaceholderHeaderEscape;
+            case PlaceholderV1<T>.HeaderParametersDelimiter:
+                placeholderHeader = ConsumeBuffer ();
+                return StatePlaceholderParameter;
+            case PlaceholderV1<T>.FormatStartChar:
+                placeholderHeader = ConsumeBuffer ();
+                return StatePlaceholderFormat;
+            case PlaceholderV1<T>.PlaceholderEndChar:
+                ConsumeParameter ();
+                ConsumePlaceholder ();
+                return StateLiteral;
+            default:
+                ConsumeChar ();
+                return StatePlaceholderHeader;
+            }
+        }
+
+        private int processPlaceholderHeaderEscape ()
+        {
+            switch (CurrentChar) {
+            case TemplateV1<T>.EscapeChar:
+            case PlaceholderV1<T>.FormatStartChar:
+            case PlaceholderV1<T>.HeaderParametersDelimiter:
+                ConsumeChar ();
+                return StatePlaceholderHeader;
+            default:
+                throw CreateHereException (Catalog.GetString ("An illegal escape sequence."));
+            }
+        }
+
+        private int processPlaceholderFormat ()
+        {
+            switch (CurrentChar) {
+            case TemplateV1<T>.EscapeChar:
+                return StatePlaceholderFormatEscape;
+            case PlaceholderV1<T>.FormatEndChar:
+                placeholderFormat = ConsumeBuffer ();
+                return StatePlaceholderParameter;
+            case PlaceholderV1<T>.PlaceholderEndChar:
+                throw CreateHereException (Catalog.GetString ("Found an incomplete format specification."));
+            default:
+                ConsumeChar ();
+                return StatePlaceholderFormat;
+            }
+        }
+
+        private int processPlaceholderFormatEscape ()
+        {
+            switch (CurrentChar) {
+            case TemplateV1<T>.EscapeChar:
+            case PlaceholderV1<T>.FormatEndChar:
+                ConsumeChar ();
+                return StatePlaceholderFormat;
+            default:
+                throw CreateHereException (Catalog.GetString ("An illegal escape sequence."));
+            }
+        }
+
+        private int processPlaceholderParameter ()
+        {
+            switch (CurrentChar) {
+            case TemplateV1<T>.EscapeChar:
+                return StatePlaceholderParameterEscape;
+            case PlaceholderV1<T>.ParameterDelimiter:
+                ConsumeParameter ();
+                return StatePlaceholderParameter;
+            case PlaceholderV1<T>.PlaceholderEndChar:
+                ConsumeParameter ();
+                ConsumePlaceholder ();
+                return StateLiteral;
+            default:
+                ConsumeChar ();
+                return StatePlaceholderParameter;
+            }
+        }
+
+        private int processPlaceholderParameterEscape ()
+        {
+            switch (CurrentChar) {
+            case TemplateV1<T>.EscapeChar:
+            case PlaceholderV1<T>.PlaceholderEndChar:
+            case PlaceholderV1<T>.ParameterDelimiter:
+                ConsumeChar ();
+                return StatePlaceholderParameter;
+            default:
+                throw CreateHereException (Catalog.GetString ("An illegal escape sequence."));
+            }
+        }
+        #endregion
     }
     #endregion
 }
