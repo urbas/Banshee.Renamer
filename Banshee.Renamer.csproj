@@ -50,10 +50,6 @@
       <Private>False</Private>
       <Package>gtk-sharp-2.0</Package>
     </Reference>
-    <Reference Include="TemplateSharp">
-      <HintPath>..\..\..\..\TemplateSharp\src\TemplateSharp\bin\Debug\TemplateSharp.dll</HintPath>
-      <Private>False</Private>
-    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Banshee.Renamer\RenamerService.cs" />
