@@ -78,7 +78,7 @@ namespace Banshee.Renamer
                 Console.WriteLine (s.ServiceName);
             }
 
-            TemplateEngineV1 sfc = new TemplateEngineV1 ();
+            DbTrackFilenameEngineV1 sfc = new DbTrackFilenameEngineV1 ();
 
             try {
                 LookupMap<DatabaseTrackInfo> parameterMap = parameter => {

@@ -29,6 +29,7 @@ using System.Collections.Generic;
 using Mono.Unix;
 using Banshee.Collection.Database;
 using System.Text;
+using Template.Text;
 
 namespace Banshee.Renamer
 {
@@ -45,7 +46,7 @@ namespace Banshee.Renamer
         #region Registry Initialisation
         static SongFilenameTemplates ()
         {
-            registry.Add (TemplateEngineV1.CompilerName, new TemplateEngineV1 ());
+            registry.Add (DbTrackFilenameEngineV1.CompilerName, new DbTrackFilenameEngineV1 ());
             registry.Add (DummyPatternCompiler.CompilerName, new DummyPatternCompiler ());
         }
         #endregion

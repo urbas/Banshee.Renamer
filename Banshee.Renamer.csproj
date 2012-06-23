@@ -50,6 +50,10 @@
       <Private>False</Private>
       <Package>gtk-sharp-2.0</Package>
     </Reference>
+    <Reference Include="TemplateSharp">
+      <HintPath>..\..\..\..\TemplateSharp\src\TemplateSharp\bin\Debug\TemplateSharp.dll</HintPath>
+      <Private>False</Private>
+    </Reference>
   </ItemGroup>
   <ItemGroup>
     <Compile Include="Banshee.Renamer\RenamerService.cs" />
@@ -57,12 +61,9 @@
     <Compile Include="gtk-gui\Banshee.Renamer.RenamerWindow.cs" />
     <Compile Include="Banshee.Renamer\RenamerWindow.cs" />
     <Compile Include="Banshee.Renamer\TrackInfoParameterMap.cs" />
-    <Compile Include="Banshee.Renamer\ITemplateEngine.cs" />
-    <Compile Include="Banshee.Renamer\ICompiledTemplate.cs" />
-    <Compile Include="Banshee.Renamer\TemplateCompilationException.cs" />
     <Compile Include="Banshee.Renamer\SongFilenameTemplates.cs" />
     <Compile Include="Banshee.Renamer\TemplateStorage.cs" />
-    <Compile Include="Banshee.Renamer\TemplateEngineV1.cs" />
+    <Compile Include="Banshee.Renamer\DbTrackFilenameEngineV1.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
   <ItemGroup>
