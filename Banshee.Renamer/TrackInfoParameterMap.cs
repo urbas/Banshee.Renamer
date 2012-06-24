@@ -28,6 +28,7 @@ using System.Collections.ObjectModel;
 using System.Collections.Generic;
 using Banshee.Collection.Database;
 using Mono.Unix;
+using Template.Text;
 
 namespace Banshee.Renamer
 {

@@ -35,6 +35,7 @@ using Banshee.Collection;
 using Banshee.Configuration;
 using System.Text;
 using Hyena;
+using Template.Text;
 
 namespace Banshee.Renamer
 {
