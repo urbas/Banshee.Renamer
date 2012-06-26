@@ -24,7 +24,7 @@ namespace Banshee.Renamer
 		private global::Gtk.Frame frame3;
 		private global::Gtk.Alignment GtkAlignment4;
 		private global::Gtk.ScrolledWindow GtkScrolledWindow;
-		private global::Gtk.TextView textview1;
+		private global::Gtk.TextView tvMessages;
 		private global::Gtk.Label lblResults;
         
 		protected virtual void Build ()
@@ -170,17 +170,16 @@ namespace Banshee.Renamer
 			this.GtkScrolledWindow.Name = "GtkScrolledWindow";
 			this.GtkScrolledWindow.ShadowType = ((global::Gtk.ShadowType)(1));
 			// Container child GtkScrolledWindow.Gtk.Container+ContainerChild
-			this.textview1 = new global::Gtk.TextView ();
-			this.textview1.Buffer.Text = "Just some text... What the hell???";
-			this.textview1.CanFocus = true;
-			this.textview1.Name = "textview1";
-			this.textview1.Editable = false;
-			this.GtkScrolledWindow.Add (this.textview1);
+			this.tvMessages = new global::Gtk.TextView ();
+			this.tvMessages.CanFocus = true;
+			this.tvMessages.Name = "tvMessages";
+			this.tvMessages.Editable = false;
+			this.GtkScrolledWindow.Add (this.tvMessages);
 			this.GtkAlignment4.Add (this.GtkScrolledWindow);
 			this.frame3.Add (this.GtkAlignment4);
 			this.lblResults = new global::Gtk.Label ();
 			this.lblResults.Name = "lblResults";
-			this.lblResults.LabelProp = global::Mono.Unix.Catalog.GetString ("<b>Results</b>");
+			this.lblResults.LabelProp = global::Mono.Unix.Catalog.GetString ("<b>Messages</b>");
 			this.lblResults.UseMarkup = true;
 			this.frame3.LabelWidget = this.lblResults;
 			this.vboxMain.Add (this.frame3);

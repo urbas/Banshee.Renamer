@@ -52,7 +52,7 @@ namespace Banshee.Renamer
             Lookup<DatabaseTrackInfo> lookup;
             if (parameterMaps.TryGetValue(parameter, out lookup))
                 return lookup;
-            return null;
+            return Template.Text.SimpleDataLookup.SimpleLookupMap<DatabaseTrackInfo>(parameter);
         }
 
         private static List<string> parameters = new List<string>();

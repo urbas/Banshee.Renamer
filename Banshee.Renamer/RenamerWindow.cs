@@ -27,6 +27,7 @@ using System;
 using Mono.Unix;
 using System.Collections.Generic;
 using System.Text;
+using Template.Text;
 
 namespace Banshee.Renamer
 {
@@ -74,7 +75,7 @@ namespace Banshee.Renamer
             // Register handlers for all the buttons:
             btnAdd.Clicked += OnPatternAdded;
             btnDelete.Clicked += OnPatternDeleted;
-            cbCompiler.Changed += OnCompilerChanged;
+            cbCompiler.Changed += OnCompilerComboBoxChanged;
         }
         #endregion
 
@@ -90,7 +91,7 @@ namespace Banshee.Renamer
                     if (currentPattern != null) {
                         currentPattern.Changed += OnCurrentPatternModified;
                     }
-                    OnCurrentPatternChanged ();
+                    OnCurrentPatternPropertyChanged ();
                 }
             }
         }
@@ -100,7 +101,7 @@ namespace Banshee.Renamer
             set {
                 if (!string.Equals (value, currentCompiler)) {
                     currentCompiler = value;
-                    OnCurrentCompilerChanged ();
+                    OnCurrentCompilerPropertyChanged ();
                 }
             }
         }
@@ -110,22 +111,22 @@ namespace Banshee.Renamer
         /// <summary>
         /// When the cbCompiler current selection changes...
         /// </summary>
-        private void OnCompilerChanged (object source, EventArgs eargs)
+        private void OnCompilerComboBoxChanged (object source, EventArgs eargs)
         {
-            UpdatePatternCompilerFromComboBox ();
+            UpdateCurrentCompilerFromComboBox ();
         }
 
         /// <summary>
         /// Invoked when the CurrentCompiler property actually changes.
         /// </summary>
-        private void OnCurrentCompilerChanged ()
+        private void OnCurrentCompilerPropertyChanged ()
         {
             UpdateGuide ();
-            if (CurrentPattern != null && !string.Equals (CurrentPattern.Engine, CurrentCompiler)) {
+            if (CurrentPattern != null) {
                 CurrentPattern.Engine = CurrentCompiler;
             }
-            int idx = compilers.IndexOf(CurrentCompiler);
-            if (idx != cbCompiler.Active){
+            int idx = compilers.IndexOf (CurrentCompiler);
+            if (idx != cbCompiler.Active) {
                 cbCompiler.Active = idx;
             }
         }
@@ -138,26 +139,29 @@ namespace Banshee.Renamer
             if (CurrentPattern != null) {
                 CurrentCompiler = CurrentPattern.Engine;
             }
+
+            // Update the text entry with the content of the new pattern.
+            UpdatePatternEntry ();
+
+            // Update the currently selected compiler:
+            UpdateCompilerComboBox ();
+
+            // Okay, let's try to compile the pattern.
+            TryCompileTemplate ();
         }
 
         /// <summary>
         /// When the property CurrentPattern changes (due to current selection changes or similar).
         /// </summary>
-        private void OnCurrentPatternChanged ()
+        private void OnCurrentPatternPropertyChanged ()
         {
             // Update the text entry with the content of the new pattern.
-            if (currentPattern == null) {
-                entryPattern.Text = string.Empty;
-            } else {
-                entryPattern.Text = currentPattern.Template ?? string.Empty;
-            }
+            UpdatePatternEntry ();
 
             // Update the currently selected compiler:
-            if (currentPattern == null) {
-                CurrentCompiler = compilers[defCompilerIndex];
-            } else {
-                CurrentCompiler = currentPattern.Engine;
-            }
+            UpdateCompilerComboBox ();
+
+            TryCompileTemplate ();
 
             // Focus on the entry field:
             entryPattern.GrabFocus ();
@@ -179,7 +183,7 @@ namespace Banshee.Renamer
         /// </summary>
         private void OnPatternChanged (object sender, System.EventArgs e)
         {
-            UpdatePatternFromEntry ();
+            UpdateCurrentPatternFromEntry ();
         }
 
         /// <summary>
@@ -187,9 +191,9 @@ namespace Banshee.Renamer
         /// </summary>
         private void OnPatternAdded (object sender, System.EventArgs ea)
         {
-            StoredTemplate sp = new StoredTemplate (entryPattern.Text, compilers [cbCompiler.Active]);
-            sps.Add (sp);
-            storedTemplates.AddNode (new StoredTemplateNode (sp));
+            StoredTemplateNode sp = GetNewPattern ();
+            sps.Add (sp.StoredTemplate);
+            storedTemplates.AddNode (sp);
             // Select the newly added one.
             tableStoredTemplates.NodeSelection.SelectPath (new Gtk.TreePath (new int[] { sps.Count - 1 }));
         }
@@ -220,20 +224,22 @@ namespace Banshee.Renamer
         #region Overriden Methods
         protected override void OnDestroyed ()
         {
-            StoreStoredTemplates ();
+            CommitStoredTemplates ();
             base.OnDestroyed ();
         }
         #endregion
 
         #region Update Model From UI (private)
-        private void UpdatePatternCompilerFromComboBox ()
+        private void UpdateCurrentCompilerFromComboBox ()
         {
             CurrentCompiler = compilers [cbCompiler.Active];
         }
 
-        private void UpdatePatternFromEntry ()
+        private void UpdateCurrentPatternFromEntry ()
         {
-            if (CurrentPattern != null && !string.Equals (CurrentPattern.Template, entryPattern.Text)) {
+            if (CurrentPattern == null) {
+                CurrentPattern = GetNewPattern ();
+            } else if (!string.Equals (CurrentPattern.Template, entryPattern.Text)) {
                 CurrentPattern.Template = entryPattern.Text;
             }
         }
@@ -260,18 +266,29 @@ namespace Banshee.Renamer
             }
             tvGuide.Buffer.Text = sb.ToString ();
         }
-        #endregion
 
-        #region Helper Methods (private)
-        private StoredTemplateNode GetNewPattern ()
+        private void UpdatePatternEntry ()
         {
-            int compilerIndex = defCompilerIndex;
-            if (cbCompiler.Active >= 0 && cbCompiler.Active < compilers.Count) {
-                compilerIndex = cbCompiler.Active;
+            if (CurrentPattern == null) {
+                entryPattern.Text = string.Empty;
+            } else {
+                entryPattern.Text = CurrentPattern.Template ?? string.Empty;
             }
-            return new StoredTemplateNode (new StoredTemplate (string.Empty, compilers [compilerIndex]));
         }
 
+        private void UpdateCompilerComboBox ()
+        {
+            if (currentPattern == null) {
+                CurrentCompiler = compilers [defCompilerIndex];
+            } else {
+                CurrentCompiler = currentPattern.Engine;
+            }
+        }
+
+        /// <summary>
+        /// Loads the list of stored templates from the persistent configuraion
+        /// and refreshes the UI list.
+        /// </summary>
         private void RefillStoredTemplatesStore ()
         {
             storedTemplates.Clear ();
@@ -282,10 +299,46 @@ namespace Banshee.Renamer
                 }
             }
         }
+        #endregion
 
-        private void StoreStoredTemplates ()
+        #region Helper Methods (private)
+        /// <summary>
+        /// Creates a new stored template, sets its template string and
+        /// compiler and returns it without setting it as the currently
+        /// edited one or adding it to
+        /// the list of stored templates.
+        /// </summary>
+        private StoredTemplateNode GetNewPattern ()
+        {
+            int compilerIndex = defCompilerIndex;
+            if (cbCompiler.Active >= 0 && cbCompiler.Active < compilers.Count) {
+                compilerIndex = cbCompiler.Active;
+            }
+            return new StoredTemplateNode (new StoredTemplate (entryPattern.Text ?? string.Empty, compilers [compilerIndex]));
+        }
+
+        /// <summary>
+        /// Commits the current list of stored templates into the  persistent
+        /// configuration.
+        /// </summary>
+        private void CommitStoredTemplates ()
         {
             TemplateStorage.StoreTemplates (sps);
+        }
+
+        private void TryCompileTemplate ()
+        {
+            if (CurrentPattern != null) {
+                try {
+                    var compiledTemplate = SongFilenameTemplates.CompileTemplate (CurrentPattern.Engine ?? compilers [defCompilerIndex], CurrentPattern.Template);
+                    // Print some examples (first five or so):
+                    StringBuilder sb = new StringBuilder (Catalog.GetString ("Some filename examples:"));
+                    RenamerService.ForAllSongs (song => {return compiledTemplate.CreateString (sb.Append('\n'), song);}, maxSongs: 5);
+                    tvMessages.Buffer.Text = sb.ToString();
+                } catch (TemplateCompilationException tce) {
+                    tvMessages.Buffer.Text = tce.FullMessage;
+                }
+            }
         }
         #endregion
     }
@@ -298,6 +351,9 @@ namespace Banshee.Renamer
 
         public StoredTemplateNode (StoredTemplate sp)
         {
+            if (sp == null) {
+                throw new ArgumentNullException ("sp");
+            }
             StoredTemplate = sp;
         }
 
@@ -307,8 +363,10 @@ namespace Banshee.Renamer
                 return StoredTemplate.Template ?? string.Empty;
             }
             set {
-                StoredTemplate.Template = value;
-                this.OnChanged ();
+                if (!string.Equals (StoredTemplate.Template, value)) {
+                    StoredTemplate.Template = value;
+                    this.OnChanged ();
+                }
             }
         }
 
@@ -318,8 +376,10 @@ namespace Banshee.Renamer
                 return StoredTemplate.Engine ?? string.Empty;
             }
             set {
-                StoredTemplate.Engine = value;
-                this.OnChanged ();
+                if (!string.Equals (StoredTemplate.Engine, value)) {
+                    StoredTemplate.Engine = value;
+                    this.OnChanged ();
+                }
             }
         }
     }

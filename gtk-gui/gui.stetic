@@ -7,7 +7,6 @@
   <import>
     <widget-library name="../../../../bin/Banshee.ThickClient.dll" />
     <widget-library name="../bin/Debug/Banshee.Renamer.dll" internal="true" />
-    <widget-library name="gtk-sharp-beans, Version=2.14.0.0, Culture=neutral, PublicKeyToken=97a95fb57b03c03a" />
   </import>
   <widget class="Gtk.Window" id="Banshee.Renamer.RenamerWindow" design-size="503 576">
     <property name="MemberName" />
@@ -232,12 +231,12 @@
                     <property name="MemberName" />
                     <property name="ShadowType">In</property>
                     <child>
-                      <widget class="Gtk.TextView" id="textview1">
+                      <widget class="Gtk.TextView" id="tvMessages">
                         <property name="MemberName" />
                         <property name="CanFocus">True</property>
                         <property name="ShowScrollbars">True</property>
                         <property name="Editable">False</property>
-                        <property name="Text" translatable="yes">Just some text... What the hell???</property>
+                        <property name="Text" translatable="yes" />
                       </widget>
                     </child>
                   </widget>
@@ -247,7 +246,7 @@
             <child>
               <widget class="Gtk.Label" id="lblResults">
                 <property name="MemberName" />
-                <property name="LabelProp" translatable="yes">&lt;b&gt;Results&lt;/b&gt;</property>
+                <property name="LabelProp" translatable="yes">&lt;b&gt;Messages&lt;/b&gt;</property>
                 <property name="UseMarkup">True</property>
               </widget>
               <packing>

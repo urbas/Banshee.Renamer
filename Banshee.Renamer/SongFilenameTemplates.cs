@@ -69,6 +69,7 @@ namespace Banshee.Renamer
                 return compiler.CompileTemplate(pattern, TrackInfoParameterMap.GetParameterMap);
             }
         }
+
         /// <summary>
         /// Gets a filename pattern compiler for the given name.
         /// </summary>
@@ -178,13 +179,25 @@ namespace Banshee.Renamer
 
         public ICompiledTemplate<DatabaseTrackInfo> CompileTemplate (string template, LookupMap<DatabaseTrackInfo> parameterMap)
         {
-            return new CompiledTemplate<DatabaseTrackInfo>(template);
+            return new DummyCompiledPattern(template);
         }
 
         public string Usage {
             get {
                 return Catalog.GetString("Patterns of this type produce filenames literally the same as the input pattern.");
             }
+        }
+    }
+
+    internal class DummyCompiledPattern : CompiledTemplate<DatabaseTrackInfo>
+    {
+        public DummyCompiledPattern(string template) : base(template)
+        {
+        }
+
+        public override void CreateString (System.IO.TextWriter output, DatabaseTrackInfo dataSource)
+        {
+            output.Write(Source);
         }
     }
     #endregion

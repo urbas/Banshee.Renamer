@@ -74,6 +74,7 @@ namespace Banshee.Renamer
         /// </param>
         protected virtual void OnOpenMassRenamerAction (object source, EventArgs args)
         {
+            /*
             Console.WriteLine ("=========== Currently registered services: ===========");
             foreach (var s in ServiceManager.RegisteredServices) {
                 Console.WriteLine (s.ServiceName);
@@ -97,7 +98,7 @@ namespace Banshee.Renamer
                     }
                 };
 
-                var pattern = sfc.CompileTemplate (@"[CC<{0:00} - {1} - >track number,artist][C<{0:00} - {1} - >track number,artist][artist] - [album] - [title] - [F<0000>track number][FC<0000>track number]", parameterMap);
+                var pattern = sfc.CompileTemplate (@"[C?<{0:00} - {1} - >track number,artist][C<{0:00} - {1} - >track number,artist][artist] - [album] - [title] - [F<0000>track number][F?<0000>track number]", parameterMap);
 
                 Hyena.Log.Information ("================ Traversing songs =================");
                 StringBuilder sb = new StringBuilder ();
@@ -113,7 +114,7 @@ namespace Banshee.Renamer
             } catch (TemplateCompilationException pcex) {
                 Log.Error (pcex.FullMessage);
             }
-
+             */
             RenamerWindow window = new RenamerWindow ();
             window.ShowAll ();
         }
@@ -126,26 +127,29 @@ namespace Banshee.Renamer
         /// <param name='action'>
         /// The action to be performed on each song in the current user's selection in the current model.
         /// </param>
-        public static void ForAllSongs (Action<DatabaseTrackInfo> action, Action<TrackInfo> actionForNonDbTracks = null)
+        public static void ForAllSongs (Action<DatabaseTrackInfo> action, Action<TrackInfo> actionForNonDbTracks = null, int maxSongs = -1)
         {
             DatabaseTrackListModel model = null;
             var selection = GetSongsSelection (out model);
             if (selection != null) {
                 lock (model) {
-                    //int selectionCount = selection.RangeCollection.Count;
-                    //int songSelectionIndex = 0;
+                    int songCounter = 0;
                     foreach (var songModelIndex in selection.RangeCollection) {
+                        if (maxSongs > -1 && songCounter >= maxSongs) {
+                            break;
+                        }
                         var trackInfo = model [songModelIndex] as DatabaseTrackInfo;
                         if (trackInfo == null) {
                             if (actionForNonDbTracks == null) {
                                 Hyena.Log.Information (string.Format (Catalog.GetString (@"Skipped the song '{0}' with selection index {1}."), model [songModelIndex].DisplayTrackTitle, songModelIndex));
                             } else {
                                 actionForNonDbTracks (model [songModelIndex]);
+                                ++songCounter;
                             }
                         } else {
                             action (trackInfo);
+                            ++songCounter;
                         }
-                        //++songSelectionIndex;
                     }
                 }
             }
