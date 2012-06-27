@@ -62,9 +62,22 @@ namespace Banshee.Renamer
         static TrackInfoParameterMap() {
             // Add all parameters:
             AddParameter("artist", Catalog.GetString("The artist of the song."), s => s.DisplayArtistName);
+            AddParameter("album artist", Catalog.GetString("The artist of the song's album."), s => s.DisplayAlbumArtistName);
             AddParameter("title", Catalog.GetString("The song's title."), s => s.DisplayTrackTitle);
             AddParameter("album", Catalog.GetString("The album of the song."), s => s.DisplayAlbumTitle);
             AddParameter("track number", Catalog.GetString("The song's track number (position in the album)."), s => s.TrackNumber > 0 ? (object)s.TrackNumber : null);
+            AddParameter("track count", Catalog.GetString("The number of songs in the song's album."), s => s.TrackCount > 0 ? (object)s.TrackCount : null);
+            AddParameter("disc number", Catalog.GetString("The number of the disc of this song."), s => s.DiscNumber > 0 ? (object)s.DiscNumber : null);
+            AddParameter("disc count", Catalog.GetString("The total number of discs of this song's album."), s => s.DiscCount > 0 ? (object)s.DiscCount : null);
+            AddParameter("extension", Catalog.GetString("The filename extension of the track."), s => s.LocalPath == null ? null : System.IO.Path.GetExtension(s.LocalPath));
+            AddParameter("comment", Catalog.GetString("Song's comment."), s => s.Comment);
+            AddParameter("copyright", Catalog.GetString("Song's copyright notice."), s => s.Copyright);
+            AddParameter("composer", Catalog.GetString("The composer of the song."), s => s.Composer);
+            AddParameter("conductor", Catalog.GetString("The conductor of the song."), s => s.Conductor);
+            AddParameter("genre", Catalog.GetString("The genre of the song."), s => s.DisplayGenre);
+            AddParameter("uri", Catalog.GetString("The song's uri."), s => s.Uri);
+            AddParameter("year", Catalog.GetString("The song's release year."), s => s.Year > 0 ? (object)s.Year : null);
+
 
             parameters.Sort ();
         }

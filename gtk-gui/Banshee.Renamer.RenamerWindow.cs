@@ -7,32 +7,35 @@ namespace Banshee.Renamer
 		private global::Gtk.VBox vboxMain;
 		private global::Gtk.Frame framePattern;
 		private global::Gtk.Alignment GtkAlignment2;
-		private global::Gtk.Table layoutPattern;
+		private global::Gtk.Table tlayoutPattern;
 		private global::Gtk.Button btnAdd;
+		private global::Gtk.Button btnDelete;
+		private global::Gtk.ComboBox cbCompiler;
 		private global::Gtk.Entry entryPattern;
 		private global::Gtk.ScrolledWindow GtkScrolledWindow1;
 		private global::Gtk.NodeView tableStoredTemplates;
-		private global::Gtk.VBox vbox2;
-		private global::Gtk.Button btnDelete;
-		private global::Gtk.ComboBox cbCompiler;
+		private global::Gtk.Label lblStoredPatterns;
 		private global::Gtk.Label lblPattern;
-		private global::Gtk.Frame frameGuide;
-		private global::Gtk.Alignment GtkAlignment3;
-		private global::Gtk.ScrolledWindow GtkScrolledWindow2;
-		private global::Gtk.TextView tvGuide;
-		private global::Gtk.Label lblGuide;
-		private global::Gtk.Frame frame3;
-		private global::Gtk.Alignment GtkAlignment4;
+		private global::Gtk.Expander expander2;
+		private global::Gtk.ScrolledWindow scrlHelp;
+		private global::Gtk.Label lblHelp;
+		private global::Gtk.Label expanderHelp;
+		private global::Gtk.Expander expanderMessages;
 		private global::Gtk.ScrolledWindow GtkScrolledWindow;
 		private global::Gtk.TextView tvMessages;
-		private global::Gtk.Label lblResults;
+		private global::Gtk.Label GtkLabel5;
+		private global::Gtk.HBox hlayoutButtons;
+		private global::Gtk.Button btnGenerate;
+		private global::Gtk.Fixed fixed2;
+		private global::Gtk.Button btnRename;
+		private global::Gtk.Button btnClose;
         
 		protected virtual void Build ()
 		{
 			global::Stetic.Gui.Initialize (this);
 			// Widget Banshee.Renamer.RenamerWindow
 			this.Name = "Banshee.Renamer.RenamerWindow";
-			this.Title = global::Mono.Unix.Catalog.GetString ("RenamerWindow");
+			this.Title = global::Mono.Unix.Catalog.GetString ("Renamer");
 			this.WindowPosition = ((global::Gtk.WindowPosition)(4));
 			// Container child Banshee.Renamer.RenamerWindow.Gtk.Container+ContainerChild
 			this.vboxMain = new global::Gtk.VBox ();
@@ -45,35 +48,59 @@ namespace Banshee.Renamer
 			// Container child framePattern.Gtk.Container+ContainerChild
 			this.GtkAlignment2 = new global::Gtk.Alignment (0F, 0F, 1F, 1F);
 			this.GtkAlignment2.Name = "GtkAlignment2";
-			this.GtkAlignment2.LeftPadding = ((uint)(12));
 			// Container child GtkAlignment2.Gtk.Container+ContainerChild
-			this.layoutPattern = new global::Gtk.Table (((uint)(3)), ((uint)(3)), false);
-			this.layoutPattern.Name = "layoutPattern";
-			this.layoutPattern.RowSpacing = ((uint)(6));
-			this.layoutPattern.ColumnSpacing = ((uint)(6));
-			// Container child layoutPattern.Gtk.Table+TableChild
+			this.tlayoutPattern = new global::Gtk.Table (((uint)(3)), ((uint)(3)), false);
+			this.tlayoutPattern.Name = "tlayoutPattern";
+			this.tlayoutPattern.RowSpacing = ((uint)(6));
+			this.tlayoutPattern.ColumnSpacing = ((uint)(6));
+			// Container child tlayoutPattern.Gtk.Table+TableChild
 			this.btnAdd = new global::Gtk.Button ();
 			this.btnAdd.CanFocus = true;
 			this.btnAdd.Name = "btnAdd";
 			this.btnAdd.UseUnderline = true;
 			this.btnAdd.Label = global::Mono.Unix.Catalog.GetString ("_Add");
-			this.layoutPattern.Add (this.btnAdd);
-			global::Gtk.Table.TableChild w1 = ((global::Gtk.Table.TableChild)(this.layoutPattern [this.btnAdd]));
-			w1.LeftAttach = ((uint)(2));
-			w1.RightAttach = ((uint)(3));
+			this.tlayoutPattern.Add (this.btnAdd);
+			global::Gtk.Table.TableChild w1 = ((global::Gtk.Table.TableChild)(this.tlayoutPattern [this.btnAdd]));
+			w1.TopAttach = ((uint)(1));
+			w1.BottomAttach = ((uint)(2));
+			w1.LeftAttach = ((uint)(1));
+			w1.RightAttach = ((uint)(2));
 			w1.XOptions = ((global::Gtk.AttachOptions)(4));
 			w1.YOptions = ((global::Gtk.AttachOptions)(4));
-			// Container child layoutPattern.Gtk.Table+TableChild
+			// Container child tlayoutPattern.Gtk.Table+TableChild
+			this.btnDelete = new global::Gtk.Button ();
+			this.btnDelete.CanFocus = true;
+			this.btnDelete.Name = "btnDelete";
+			this.btnDelete.UseUnderline = true;
+			this.btnDelete.Label = global::Mono.Unix.Catalog.GetString ("_Delete");
+			this.tlayoutPattern.Add (this.btnDelete);
+			global::Gtk.Table.TableChild w2 = ((global::Gtk.Table.TableChild)(this.tlayoutPattern [this.btnDelete]));
+			w2.TopAttach = ((uint)(1));
+			w2.BottomAttach = ((uint)(2));
+			w2.LeftAttach = ((uint)(2));
+			w2.RightAttach = ((uint)(3));
+			w2.XOptions = ((global::Gtk.AttachOptions)(4));
+			w2.YOptions = ((global::Gtk.AttachOptions)(4));
+			// Container child tlayoutPattern.Gtk.Table+TableChild
+			this.cbCompiler = global::Gtk.ComboBox.NewText ();
+			this.cbCompiler.Name = "cbCompiler";
+			this.tlayoutPattern.Add (this.cbCompiler);
+			global::Gtk.Table.TableChild w3 = ((global::Gtk.Table.TableChild)(this.tlayoutPattern [this.cbCompiler]));
+			w3.LeftAttach = ((uint)(2));
+			w3.RightAttach = ((uint)(3));
+			w3.XOptions = ((global::Gtk.AttachOptions)(4));
+			w3.YOptions = ((global::Gtk.AttachOptions)(4));
+			// Container child tlayoutPattern.Gtk.Table+TableChild
 			this.entryPattern = new global::Gtk.Entry ();
 			this.entryPattern.CanFocus = true;
 			this.entryPattern.Name = "entryPattern";
 			this.entryPattern.IsEditable = true;
 			this.entryPattern.InvisibleChar = '•';
-			this.layoutPattern.Add (this.entryPattern);
-			global::Gtk.Table.TableChild w2 = ((global::Gtk.Table.TableChild)(this.layoutPattern [this.entryPattern]));
-			w2.RightAttach = ((uint)(2));
-			w2.YOptions = ((global::Gtk.AttachOptions)(4));
-			// Container child layoutPattern.Gtk.Table+TableChild
+			this.tlayoutPattern.Add (this.entryPattern);
+			global::Gtk.Table.TableChild w4 = ((global::Gtk.Table.TableChild)(this.tlayoutPattern [this.entryPattern]));
+			w4.RightAttach = ((uint)(2));
+			w4.YOptions = ((global::Gtk.AttachOptions)(4));
+			// Container child tlayoutPattern.Gtk.Table+TableChild
 			this.GtkScrolledWindow1 = new global::Gtk.ScrolledWindow ();
 			this.GtkScrolledWindow1.Name = "GtkScrolledWindow1";
 			this.GtkScrolledWindow1.ShadowType = ((global::Gtk.ShadowType)(1));
@@ -82,90 +109,75 @@ namespace Banshee.Renamer
 			this.tableStoredTemplates.CanFocus = true;
 			this.tableStoredTemplates.Name = "tableStoredTemplates";
 			this.GtkScrolledWindow1.Add (this.tableStoredTemplates);
-			this.layoutPattern.Add (this.GtkScrolledWindow1);
-			global::Gtk.Table.TableChild w4 = ((global::Gtk.Table.TableChild)(this.layoutPattern [this.GtkScrolledWindow1]));
-			w4.TopAttach = ((uint)(1));
-			w4.BottomAttach = ((uint)(3));
-			w4.RightAttach = ((uint)(2));
-			// Container child layoutPattern.Gtk.Table+TableChild
-			this.vbox2 = new global::Gtk.VBox ();
-			this.vbox2.Name = "vbox2";
-			this.vbox2.Spacing = 6;
-			// Container child vbox2.Gtk.Box+BoxChild
-			this.btnDelete = new global::Gtk.Button ();
-			this.btnDelete.CanFocus = true;
-			this.btnDelete.Name = "btnDelete";
-			this.btnDelete.UseUnderline = true;
-			this.btnDelete.Label = global::Mono.Unix.Catalog.GetString ("_Delete");
-			this.vbox2.Add (this.btnDelete);
-			global::Gtk.Box.BoxChild w5 = ((global::Gtk.Box.BoxChild)(this.vbox2 [this.btnDelete]));
-			w5.Position = 0;
-			w5.Expand = false;
-			w5.Fill = false;
-			// Container child vbox2.Gtk.Box+BoxChild
-			this.cbCompiler = global::Gtk.ComboBox.NewText ();
-			this.cbCompiler.Name = "cbCompiler";
-			this.vbox2.Add (this.cbCompiler);
-			global::Gtk.Box.BoxChild w6 = ((global::Gtk.Box.BoxChild)(this.vbox2 [this.cbCompiler]));
-			w6.Position = 1;
-			w6.Expand = false;
-			w6.Fill = false;
-			this.layoutPattern.Add (this.vbox2);
-			global::Gtk.Table.TableChild w7 = ((global::Gtk.Table.TableChild)(this.layoutPattern [this.vbox2]));
+			this.tlayoutPattern.Add (this.GtkScrolledWindow1);
+			global::Gtk.Table.TableChild w6 = ((global::Gtk.Table.TableChild)(this.tlayoutPattern [this.GtkScrolledWindow1]));
+			w6.TopAttach = ((uint)(2));
+			w6.BottomAttach = ((uint)(3));
+			w6.RightAttach = ((uint)(3));
+			w6.XOptions = ((global::Gtk.AttachOptions)(4));
+			// Container child tlayoutPattern.Gtk.Table+TableChild
+			this.lblStoredPatterns = new global::Gtk.Label ();
+			this.lblStoredPatterns.Name = "lblStoredPatterns";
+			this.lblStoredPatterns.Xalign = 0F;
+			this.lblStoredPatterns.Yalign = 1F;
+			this.lblStoredPatterns.LabelProp = global::Mono.Unix.Catalog.GetString ("<i>Stored filename patterns:</i>");
+			this.lblStoredPatterns.UseMarkup = true;
+			this.tlayoutPattern.Add (this.lblStoredPatterns);
+			global::Gtk.Table.TableChild w7 = ((global::Gtk.Table.TableChild)(this.tlayoutPattern [this.lblStoredPatterns]));
 			w7.TopAttach = ((uint)(1));
 			w7.BottomAttach = ((uint)(2));
-			w7.LeftAttach = ((uint)(2));
-			w7.RightAttach = ((uint)(3));
 			w7.XOptions = ((global::Gtk.AttachOptions)(4));
 			w7.YOptions = ((global::Gtk.AttachOptions)(4));
-			this.GtkAlignment2.Add (this.layoutPattern);
+			this.GtkAlignment2.Add (this.tlayoutPattern);
 			this.framePattern.Add (this.GtkAlignment2);
 			this.lblPattern = new global::Gtk.Label ();
 			this.lblPattern.Name = "lblPattern";
-			this.lblPattern.LabelProp = global::Mono.Unix.Catalog.GetString ("<b>Template:</b>");
+			this.lblPattern.LabelProp = global::Mono.Unix.Catalog.GetString ("<b>Filename pattern:</b>");
 			this.lblPattern.UseMarkup = true;
 			this.framePattern.LabelWidget = this.lblPattern;
 			this.vboxMain.Add (this.framePattern);
 			global::Gtk.Box.BoxChild w10 = ((global::Gtk.Box.BoxChild)(this.vboxMain [this.framePattern]));
 			w10.Position = 0;
 			// Container child vboxMain.Gtk.Box+BoxChild
-			this.frameGuide = new global::Gtk.Frame ();
-			this.frameGuide.Name = "frameGuide";
-			this.frameGuide.ShadowType = ((global::Gtk.ShadowType)(0));
-			// Container child frameGuide.Gtk.Container+ContainerChild
-			this.GtkAlignment3 = new global::Gtk.Alignment (0F, 0F, 1F, 1F);
-			this.GtkAlignment3.Name = "GtkAlignment3";
-			this.GtkAlignment3.LeftPadding = ((uint)(12));
-			// Container child GtkAlignment3.Gtk.Container+ContainerChild
-			this.GtkScrolledWindow2 = new global::Gtk.ScrolledWindow ();
-			this.GtkScrolledWindow2.Name = "GtkScrolledWindow2";
-			this.GtkScrolledWindow2.ShadowType = ((global::Gtk.ShadowType)(1));
-			// Container child GtkScrolledWindow2.Gtk.Container+ContainerChild
-			this.tvGuide = new global::Gtk.TextView ();
-			this.tvGuide.CanFocus = true;
-			this.tvGuide.Name = "tvGuide";
-			this.tvGuide.Editable = false;
-			this.tvGuide.WrapMode = ((global::Gtk.WrapMode)(2));
-			this.GtkScrolledWindow2.Add (this.tvGuide);
-			this.GtkAlignment3.Add (this.GtkScrolledWindow2);
-			this.frameGuide.Add (this.GtkAlignment3);
-			this.lblGuide = new global::Gtk.Label ();
-			this.lblGuide.Name = "lblGuide";
-			this.lblGuide.LabelProp = global::Mono.Unix.Catalog.GetString ("<b>Guide:</b>");
-			this.lblGuide.UseMarkup = true;
-			this.frameGuide.LabelWidget = this.lblGuide;
-			this.vboxMain.Add (this.frameGuide);
-			global::Gtk.Box.BoxChild w14 = ((global::Gtk.Box.BoxChild)(this.vboxMain [this.frameGuide]));
-			w14.Position = 1;
+			this.expander2 = new global::Gtk.Expander (null);
+			this.expander2.CanFocus = true;
+			this.expander2.Name = "expander2";
+			// Container child expander2.Gtk.Container+ContainerChild
+			this.scrlHelp = new global::Gtk.ScrolledWindow ();
+			this.scrlHelp.HeightRequest = 150;
+			this.scrlHelp.CanFocus = true;
+			this.scrlHelp.Name = "scrlHelp";
+			this.scrlHelp.ShadowType = ((global::Gtk.ShadowType)(1));
+			// Container child scrlHelp.Gtk.Container+ContainerChild
+			global::Gtk.Viewport w11 = new global::Gtk.Viewport ();
+			w11.ShadowType = ((global::Gtk.ShadowType)(0));
+			// Container child GtkViewport.Gtk.Container+ContainerChild
+			this.lblHelp = new global::Gtk.Label ();
+			this.lblHelp.Name = "lblHelp";
+			this.lblHelp.Xalign = 0F;
+			this.lblHelp.Yalign = 0F;
+			this.lblHelp.UseMarkup = true;
+			this.lblHelp.Wrap = true;
+			this.lblHelp.Selectable = true;
+			w11.Add (this.lblHelp);
+			this.scrlHelp.Add (w11);
+			this.expander2.Add (this.scrlHelp);
+			this.expanderHelp = new global::Gtk.Label ();
+			this.expanderHelp.Name = "expanderHelp";
+			this.expanderHelp.LabelProp = global::Mono.Unix.Catalog.GetString ("<b>Help:</b>");
+			this.expanderHelp.UseMarkup = true;
+			this.expanderHelp.UseUnderline = true;
+			this.expander2.LabelWidget = this.expanderHelp;
+			this.vboxMain.Add (this.expander2);
+			global::Gtk.Box.BoxChild w15 = ((global::Gtk.Box.BoxChild)(this.vboxMain [this.expander2]));
+			w15.Position = 1;
+			w15.Expand = false;
 			// Container child vboxMain.Gtk.Box+BoxChild
-			this.frame3 = new global::Gtk.Frame ();
-			this.frame3.Name = "frame3";
-			this.frame3.ShadowType = ((global::Gtk.ShadowType)(0));
-			// Container child frame3.Gtk.Container+ContainerChild
-			this.GtkAlignment4 = new global::Gtk.Alignment (0F, 0F, 1F, 1F);
-			this.GtkAlignment4.Name = "GtkAlignment4";
-			this.GtkAlignment4.LeftPadding = ((uint)(12));
-			// Container child GtkAlignment4.Gtk.Container+ContainerChild
+			this.expanderMessages = new global::Gtk.Expander (null);
+			this.expanderMessages.CanFocus = true;
+			this.expanderMessages.Name = "expanderMessages";
+			this.expanderMessages.Expanded = true;
+			// Container child expanderMessages.Gtk.Container+ContainerChild
 			this.GtkScrolledWindow = new global::Gtk.ScrolledWindow ();
 			this.GtkScrolledWindow.Name = "GtkScrolledWindow";
 			this.GtkScrolledWindow.ShadowType = ((global::Gtk.ShadowType)(1));
@@ -175,16 +187,66 @@ namespace Banshee.Renamer
 			this.tvMessages.Name = "tvMessages";
 			this.tvMessages.Editable = false;
 			this.GtkScrolledWindow.Add (this.tvMessages);
-			this.GtkAlignment4.Add (this.GtkScrolledWindow);
-			this.frame3.Add (this.GtkAlignment4);
-			this.lblResults = new global::Gtk.Label ();
-			this.lblResults.Name = "lblResults";
-			this.lblResults.LabelProp = global::Mono.Unix.Catalog.GetString ("<b>Messages</b>");
-			this.lblResults.UseMarkup = true;
-			this.frame3.LabelWidget = this.lblResults;
-			this.vboxMain.Add (this.frame3);
-			global::Gtk.Box.BoxChild w18 = ((global::Gtk.Box.BoxChild)(this.vboxMain [this.frame3]));
+			this.expanderMessages.Add (this.GtkScrolledWindow);
+			this.GtkLabel5 = new global::Gtk.Label ();
+			this.GtkLabel5.Name = "GtkLabel5";
+			this.GtkLabel5.LabelProp = global::Mono.Unix.Catalog.GetString ("<b>Messages:</b>");
+			this.GtkLabel5.UseMarkup = true;
+			this.GtkLabel5.UseUnderline = true;
+			this.expanderMessages.LabelWidget = this.GtkLabel5;
+			this.vboxMain.Add (this.expanderMessages);
+			global::Gtk.Box.BoxChild w18 = ((global::Gtk.Box.BoxChild)(this.vboxMain [this.expanderMessages]));
 			w18.Position = 2;
+			// Container child vboxMain.Gtk.Box+BoxChild
+			this.hlayoutButtons = new global::Gtk.HBox ();
+			this.hlayoutButtons.Name = "hlayoutButtons";
+			this.hlayoutButtons.Spacing = 6;
+			// Container child hlayoutButtons.Gtk.Box+BoxChild
+			this.btnGenerate = new global::Gtk.Button ();
+			this.btnGenerate.CanFocus = true;
+			this.btnGenerate.Name = "btnGenerate";
+			this.btnGenerate.UseUnderline = true;
+			this.btnGenerate.Label = global::Mono.Unix.Catalog.GetString ("_Generate filenames");
+			this.hlayoutButtons.Add (this.btnGenerate);
+			global::Gtk.Box.BoxChild w19 = ((global::Gtk.Box.BoxChild)(this.hlayoutButtons [this.btnGenerate]));
+			w19.Position = 0;
+			w19.Expand = false;
+			w19.Fill = false;
+			// Container child hlayoutButtons.Gtk.Box+BoxChild
+			this.fixed2 = new global::Gtk.Fixed ();
+			this.fixed2.Name = "fixed2";
+			this.fixed2.HasWindow = false;
+			this.hlayoutButtons.Add (this.fixed2);
+			global::Gtk.Box.BoxChild w20 = ((global::Gtk.Box.BoxChild)(this.hlayoutButtons [this.fixed2]));
+			w20.Position = 1;
+			// Container child hlayoutButtons.Gtk.Box+BoxChild
+			this.btnRename = new global::Gtk.Button ();
+			this.btnRename.CanFocus = true;
+			this.btnRename.Name = "btnRename";
+			this.btnRename.UseUnderline = true;
+			this.btnRename.Label = global::Mono.Unix.Catalog.GetString ("_Rename");
+			this.hlayoutButtons.Add (this.btnRename);
+			global::Gtk.Box.BoxChild w21 = ((global::Gtk.Box.BoxChild)(this.hlayoutButtons [this.btnRename]));
+			w21.Position = 2;
+			w21.Expand = false;
+			w21.Fill = false;
+			// Container child hlayoutButtons.Gtk.Box+BoxChild
+			this.btnClose = new global::Gtk.Button ();
+			this.btnClose.CanFocus = true;
+			this.btnClose.Name = "btnClose";
+			this.btnClose.UseUnderline = true;
+			this.btnClose.Label = global::Mono.Unix.Catalog.GetString ("_Close");
+			this.hlayoutButtons.Add (this.btnClose);
+			global::Gtk.Box.BoxChild w22 = ((global::Gtk.Box.BoxChild)(this.hlayoutButtons [this.btnClose]));
+			w22.Position = 3;
+			w22.Expand = false;
+			w22.Fill = false;
+			this.vboxMain.Add (this.hlayoutButtons);
+			global::Gtk.Box.BoxChild w23 = ((global::Gtk.Box.BoxChild)(this.vboxMain [this.hlayoutButtons]));
+			w23.PackType = ((global::Gtk.PackType)(1));
+			w23.Position = 3;
+			w23.Expand = false;
+			w23.Fill = false;
 			this.Add (this.vboxMain);
 			if ((this.Child != null)) {
 				this.Child.ShowAll ();

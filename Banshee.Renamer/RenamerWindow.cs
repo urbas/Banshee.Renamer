@@ -28,6 +28,7 @@ using Mono.Unix;
 using System.Collections.Generic;
 using System.Text;
 using Template.Text;
+using Banshee.Collection.Database;
 
 namespace Banshee.Renamer
 {
@@ -57,7 +58,7 @@ namespace Banshee.Renamer
             cbCompiler.Model = compilersModel;
 
             // Set a monotype and small font for the guide:
-            tvGuide.ModifyFont (Pango.FontDescription.FromString ("monospace 8"));
+            lblHelp.ModifyFont (Pango.FontDescription.FromString ("monospace 8"));
 
             // Load all the stored patterns (from the persistent configuration):
             RefillStoredTemplatesStore ();
@@ -76,6 +77,8 @@ namespace Banshee.Renamer
             btnAdd.Clicked += OnPatternAdded;
             btnDelete.Clicked += OnPatternDeleted;
             cbCompiler.Changed += OnCompilerComboBoxChanged;
+            btnClose.Clicked += OnButtonCloseClicked;
+            btnGenerate.Clicked += OnButtonGenerateClicked;
         }
         #endregion
 
@@ -114,6 +117,20 @@ namespace Banshee.Renamer
         private void OnCompilerComboBoxChanged (object source, EventArgs eargs)
         {
             UpdateCurrentCompilerFromComboBox ();
+        }
+
+        private void OnButtonCloseClicked (object source, EventArgs args)
+        {
+            this.Destroy ();
+        }
+
+        private void OnButtonGenerateClicked (object source, EventArgs args)
+        {
+            ForAllSongs<StringBuilder> (
+                ct => new StringBuilder (),
+                (ct, song, sb) => { ct.CreateString (sb, song); sb.Append ('\n'); },
+                (ct, sb) => tvMessages.Buffer.Text = sb.ToString ()
+            );
         }
 
         /// <summary>
@@ -249,22 +266,22 @@ namespace Banshee.Renamer
         private void UpdateGuide ()
         {
             StringBuilder sb = new StringBuilder ();
-            sb.Append (Catalog.GetString ("=========== List of parameters ===========\n\n"));
+            sb.Append (Catalog.GetString ("<b>List of parameters</b>:\n\n"));
             // TODO: Add the list of parameters:
             var knownParams = TrackInfoParameterMap.Parameters;
             foreach (var param in knownParams) {
-                sb.Append ("-   ").Append (param).Append (": ").Append (TrackInfoParameterMap.GetDescription (param)).Append ('\n');
+                sb.Append ("-   <b>").Append (param).Append ("</b>: ").Append (TrackInfoParameterMap.GetDescription (param)).Append ('\n');
             }
 
             // Now append the guide for the currently chosen compiler:
             if (CurrentCompiler != null) {
                 var compiler = SongFilenameTemplates.GetTemplateEngine (CurrentCompiler);
                 if (compiler != null) {
-                    sb.Append (Catalog.GetString ("\n=========== Template usage ===========\n\n"));
-                    sb.Append (compiler.Usage);
+                    sb.Append (Catalog.GetString ("\n<b>Template usage</b>:\n\n"));
+                    sb.Append (compiler.Usage.Replace("&", "&amp;").Replace("<", "&lt;").Replace(">", "&gt;"));
                 }
             }
-            tvGuide.Buffer.Text = sb.ToString ();
+            lblHelp.Markup = sb.ToString ();
         }
 
         private void UpdatePatternEntry ()
@@ -328,17 +345,41 @@ namespace Banshee.Renamer
 
         private void TryCompileTemplate ()
         {
+            ForAllSongs<StringBuilder> (
+                ct => new StringBuilder (Catalog.GetString ("Some filename examples:")),
+                (ct, song, sb) => ct.CreateString (sb.Append ('\n'), song),
+                (ct, sb) => tvMessages.Buffer.Text = sb.ToString (),
+                maxSongs: 5
+            );
+        }
+
+        private ICompiledTemplate<DatabaseTrackInfo> CompileTemplate ()
+        {
             if (CurrentPattern != null) {
-                try {
-                    var compiledTemplate = SongFilenameTemplates.CompileTemplate (CurrentPattern.Engine ?? compilers [defCompilerIndex], CurrentPattern.Template);
-                    // Print some examples (first five or so):
-                    StringBuilder sb = new StringBuilder (Catalog.GetString ("Some filename examples:"));
-                    RenamerService.ForAllSongs (song => {return compiledTemplate.CreateString (sb.Append('\n'), song);}, maxSongs: 5);
-                    tvMessages.Buffer.Text = sb.ToString();
-                } catch (TemplateCompilationException tce) {
-                    tvMessages.Buffer.Text = tce.FullMessage;
-                }
+                return SongFilenameTemplates.CompileTemplate (CurrentPattern.Engine ?? compilers [defCompilerIndex], CurrentPattern.Template);
             }
+            return null;
+        }
+
+        private void ForAllSongs<TData> (Func<ICompiledTemplate<DatabaseTrackInfo>, TData> init = null, Action<ICompiledTemplate<DatabaseTrackInfo>, DatabaseTrackInfo, TData> action = null, Action<ICompiledTemplate<DatabaseTrackInfo>, TData> finish = null, int maxSongs = -1)
+        {
+            try {
+                var compiledTemplate = CompileTemplate ();
+                if (compiledTemplate != null) {
+                    TData data = init == null ? default(TData) : init (compiledTemplate);
+                    RenamerService.ForAllSongs (song => { if (action != null) action (compiledTemplate, song, data); }, maxSongs: maxSongs);
+                    if (finish != null) {
+                        finish (compiledTemplate, data);
+                    }
+                }
+            } catch (TemplateCompilationException tce) {
+                tvMessages.Buffer.Text = tce.FullMessage;
+            }
+        }
+
+        private void CreateFilename(ICompiledTemplate<DatabaseTrackInfo> template, DatabaseTrackInfo song, StringBuilder sb)
+        {
+            template.CreateString(sb, song);
         }
         #endregion
     }
