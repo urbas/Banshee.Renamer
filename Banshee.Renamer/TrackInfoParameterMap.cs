@@ -69,7 +69,6 @@ namespace Banshee.Renamer
             AddParameter("track count", Catalog.GetString("The number of songs in the song's album."), s => s.TrackCount > 0 ? (object)s.TrackCount : null);
             AddParameter("disc number", Catalog.GetString("The number of the disc of this song."), s => s.DiscNumber > 0 ? (object)s.DiscNumber : null);
             AddParameter("disc count", Catalog.GetString("The total number of discs of this song's album."), s => s.DiscCount > 0 ? (object)s.DiscCount : null);
-            AddParameter("extension", Catalog.GetString("The filename extension of the track."), s => s.LocalPath == null ? null : System.IO.Path.GetExtension(s.LocalPath));
             AddParameter("comment", Catalog.GetString("Song's comment."), s => s.Comment);
             AddParameter("copyright", Catalog.GetString("Song's copyright notice."), s => s.Copyright);
             AddParameter("composer", Catalog.GetString("The composer of the song."), s => s.Composer);
@@ -77,7 +76,11 @@ namespace Banshee.Renamer
             AddParameter("genre", Catalog.GetString("The genre of the song."), s => s.DisplayGenre);
             AddParameter("uri", Catalog.GetString("The song's uri."), s => s.Uri);
             AddParameter("year", Catalog.GetString("The song's release year."), s => s.Year > 0 ? (object)s.Year : null);
-
+            AddParameter("extension", Catalog.GetString("The song's filename extension."), s => s.LocalPath == null ? null : System.IO.Path.GetExtension(s.LocalPath));
+            AddParameter("folder", Catalog.GetString("The song's directory."), s => s.LocalPath == null ? null : System.IO.Path.GetDirectoryName(s.Uri.LocalPath));
+            AddParameter("file name", Catalog.GetString("The song's file name."), s => s.LocalPath == null ? null : System.IO.Path.GetFileName(s.Uri.LocalPath));
+            AddParameter("full path", Catalog.GetString("The song's full path."), s => s.LocalPath);
+            AddParameter("file title", Catalog.GetString("The song's file name without the extension."), s => s.LocalPath == null ? null : System.IO.Path.GetFileNameWithoutExtension(s.Uri.LocalPath));
 
             parameters.Sort ();
         }
