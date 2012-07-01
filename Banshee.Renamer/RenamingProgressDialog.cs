@@ -136,6 +136,9 @@ namespace Banshee.Renamer
                         try {
                             Directory.Create(System.IO.Path.GetDirectoryName(newFilename));
                             File.Move (trackInfo.Uri, new SafeUri (newFilename));
+                            try {
+                                Directory.Delete(System.IO.Path.GetDirectoryName(trackInfo.LocalPath));
+                            } catch (Exception) {}
                         } catch (Exception ex) {
                             AppendMessage (string.Format (Catalog.GetString ("Could not rename song '{0}' to '{1}'. Error message: {2}\n"), trackInfo.Uri.AbsolutePath, newFilename, ex.Message));
                         }
