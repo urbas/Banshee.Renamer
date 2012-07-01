@@ -224,29 +224,45 @@ namespace Banshee.Renamer
 			this.btnRename.CanFocus = true;
 			this.btnRename.Name = "btnRename";
 			this.btnRename.UseUnderline = true;
-			this.btnRename.Label = global::Mono.Unix.Catalog.GetString ("_Rename");
+			// Container child btnRename.Gtk.Container+ContainerChild
+			global::Gtk.Alignment w21 = new global::Gtk.Alignment (0.5F, 0.5F, 0F, 0F);
+			// Container child GtkAlignment.Gtk.Container+ContainerChild
+			global::Gtk.HBox w22 = new global::Gtk.HBox ();
+			w22.Spacing = 2;
+			// Container child GtkHBox.Gtk.Container+ContainerChild
+			global::Gtk.Image w23 = new global::Gtk.Image ();
+			w23.Pixbuf = global::Stetic.IconLoader.LoadIcon (this, "gtk-execute", global::Gtk.IconSize.Menu);
+			w22.Add (w23);
+			// Container child GtkHBox.Gtk.Container+ContainerChild
+			global::Gtk.Label w25 = new global::Gtk.Label ();
+			w25.LabelProp = global::Mono.Unix.Catalog.GetString ("_Rename");
+			w25.UseUnderline = true;
+			w22.Add (w25);
+			w21.Add (w22);
+			this.btnRename.Add (w21);
 			this.hlayoutButtons.Add (this.btnRename);
-			global::Gtk.Box.BoxChild w21 = ((global::Gtk.Box.BoxChild)(this.hlayoutButtons [this.btnRename]));
-			w21.Position = 2;
-			w21.Expand = false;
-			w21.Fill = false;
+			global::Gtk.Box.BoxChild w29 = ((global::Gtk.Box.BoxChild)(this.hlayoutButtons [this.btnRename]));
+			w29.Position = 2;
+			w29.Expand = false;
+			w29.Fill = false;
 			// Container child hlayoutButtons.Gtk.Box+BoxChild
 			this.btnClose = new global::Gtk.Button ();
 			this.btnClose.CanFocus = true;
 			this.btnClose.Name = "btnClose";
+			this.btnClose.UseStock = true;
 			this.btnClose.UseUnderline = true;
-			this.btnClose.Label = global::Mono.Unix.Catalog.GetString ("_Close");
+			this.btnClose.Label = "gtk-cancel";
 			this.hlayoutButtons.Add (this.btnClose);
-			global::Gtk.Box.BoxChild w22 = ((global::Gtk.Box.BoxChild)(this.hlayoutButtons [this.btnClose]));
-			w22.Position = 3;
-			w22.Expand = false;
-			w22.Fill = false;
+			global::Gtk.Box.BoxChild w30 = ((global::Gtk.Box.BoxChild)(this.hlayoutButtons [this.btnClose]));
+			w30.Position = 3;
+			w30.Expand = false;
+			w30.Fill = false;
 			this.vboxMain.Add (this.hlayoutButtons);
-			global::Gtk.Box.BoxChild w23 = ((global::Gtk.Box.BoxChild)(this.vboxMain [this.hlayoutButtons]));
-			w23.PackType = ((global::Gtk.PackType)(1));
-			w23.Position = 3;
-			w23.Expand = false;
-			w23.Fill = false;
+			global::Gtk.Box.BoxChild w31 = ((global::Gtk.Box.BoxChild)(this.vboxMain [this.hlayoutButtons]));
+			w31.PackType = ((global::Gtk.PackType)(1));
+			w31.Position = 3;
+			w31.Expand = false;
+			w31.Fill = false;
 			this.Add (this.vboxMain);
 			if ((this.Child != null)) {
 				this.Child.ShowAll ();

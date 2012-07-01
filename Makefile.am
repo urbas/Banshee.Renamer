@@ -7,10 +7,12 @@ SOURCES =  \
 	Banshee.Renamer/DbTrackFilenameEngineV1.cs \
 	Banshee.Renamer/RenamerService.cs \
 	Banshee.Renamer/RenamerWindow.cs \
+	Banshee.Renamer/RenamingProgressDialog.cs \
 	Banshee.Renamer/SongFilenameTemplates.cs \
 	Banshee.Renamer/TemplateStorage.cs \
 	Banshee.Renamer/TrackInfoParameterMap.cs \
 	gtk-gui/Banshee.Renamer.RenamerWindow.cs \
+	gtk-gui/Banshee.Renamer.RenamingProgressDialog.cs \
 	gtk-gui/generated.cs
 
 RESOURCES =  \

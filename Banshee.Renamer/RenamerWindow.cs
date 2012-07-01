@@ -79,6 +79,7 @@ namespace Banshee.Renamer
             cbCompiler.Changed += OnCompilerComboBoxChanged;
             btnClose.Clicked += OnButtonCloseClicked;
             btnGenerate.Clicked += OnButtonGenerateClicked;
+            btnRename.Clicked += OnButtonRenameClicked;
         }
         #endregion
 
@@ -133,6 +134,18 @@ namespace Banshee.Renamer
             );
         }
 
+        private void OnButtonRenameClicked(object source, EventArgs args)
+        {
+            var template = TryCompileTemplate();
+            if (template != null) {
+                RenamingProgressDialog rpd = new RenamingProgressDialog(template);
+                rpd.Show();
+            } else {
+                Gtk.MessageDialog mdialog = new Gtk.MessageDialog(this, Gtk.DialogFlags.Modal, Gtk.MessageType.Error, Gtk.ButtonsType.Close, Catalog.GetString("Could not start renaming the files. The current template is not valid.\n\nPlease fix the filename template first."));
+                mdialog.Show();
+            }
+        }
+
         /// <summary>
         /// Invoked when the CurrentCompiler property actually changes.
         /// </summary>
@@ -164,7 +177,7 @@ namespace Banshee.Renamer
             UpdateCompilerComboBox ();
 
             // Okay, let's try to compile the pattern.
-            TryCompileTemplate ();
+            TryCreateSamples ();
         }
 
         /// <summary>
@@ -178,7 +191,7 @@ namespace Banshee.Renamer
             // Update the currently selected compiler:
             UpdateCompilerComboBox ();
 
-            TryCompileTemplate ();
+            TryCreateSamples ();
 
             // Focus on the entry field:
             entryPattern.GrabFocus ();
@@ -343,7 +356,7 @@ namespace Banshee.Renamer
             TemplateStorage.StoreTemplates (sps);
         }
 
-        private void TryCompileTemplate ()
+        private void TryCreateSamples ()
         {
             ForAllSongs<StringBuilder> (
                 ct => new StringBuilder (Catalog.GetString ("Some filename examples:")),
@@ -358,6 +371,16 @@ namespace Banshee.Renamer
             if (CurrentPattern != null) {
                 return SongFilenameTemplates.CompileTemplate (CurrentPattern.Engine ?? compilers [defCompilerIndex], CurrentPattern.Template);
             }
+            return null;
+        }
+
+        private ICompiledTemplate<DatabaseTrackInfo> TryCompileTemplate ()
+        {
+            try {
+                if (CurrentPattern != null) {
+                    return SongFilenameTemplates.CompileTemplate (CurrentPattern.Engine ?? compilers [defCompilerIndex], CurrentPattern.Template);
+                }
+            } catch (Exception) { }
             return null;
         }
 
