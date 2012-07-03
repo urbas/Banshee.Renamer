@@ -81,6 +81,10 @@ namespace Banshee.Renamer
             AddParameter("file name", Catalog.GetString("The song's file name."), s => s.LocalPath == null ? null : System.IO.Path.GetFileName(s.Uri.LocalPath));
             AddParameter("full path", Catalog.GetString("The song's full path."), s => s.LocalPath);
             AddParameter("file title", Catalog.GetString("The song's file name without the extension."), s => s.LocalPath == null ? null : System.IO.Path.GetFileNameWithoutExtension(s.Uri.LocalPath));
+            var musicFolder = System.Environment.GetFolderPath(Environment.SpecialFolder.MyMusic);
+            AddParameter("music", Catalog.GetString("The default music folder."), s => musicFolder);
+            var homeFolder = System.Environment.GetFolderPath(Environment.SpecialFolder.Personal);
+            AddParameter("home", Catalog.GetString("The user's home folder."), s => homeFolder);
 
             parameters.Sort ();
         }
