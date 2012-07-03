@@ -1,6 +1,8 @@
 using System;
 using NUnit.Framework;
 
+#if ENABLE_TESTS
+
 namespace Banshee.Renamer
 {
 	[TestFixture()]
@@ -13,3 +15,4 @@ namespace Banshee.Renamer
 	}
 }
 
+#endif

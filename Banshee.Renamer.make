@@ -4,7 +4,7 @@
 
 if ENABLE_DEBUG
 ASSEMBLY_COMPILER_COMMAND = dmcs
-ASSEMBLY_COMPILER_FLAGS =  -noconfig -codepage:utf8 -warn:4 -optimize- -debug "-define:DEBUG;"
+ASSEMBLY_COMPILER_FLAGS =  -noconfig -codepage:utf8 -warn:4 -optimize- -debug "-define:DEBUG"
 ASSEMBLY = bin/Debug/Banshee.Renamer.dll
 ASSEMBLY_MDB = $(ASSEMBLY).mdb
 COMPILE_TARGET = library
@@ -13,6 +13,10 @@ BUILD_DIR = bin/Debug
 
 BANSHEE_RENAMER_DLL_MDB_SOURCE=bin/Debug/Banshee.Renamer.dll.mdb
 BANSHEE_RENAMER_DLL_MDB=$(BUILD_DIR)/Banshee.Renamer.dll.mdb
+
+if ENABLE_TESTS
+ASSEMBLY_COMPILER_FLAGS += "-define:ENABLE_TESTS"
+endif
 
 endif
 
@@ -26,6 +30,10 @@ PROJECT_REFERENCES =
 BUILD_DIR = bin/Release
 
 BANSHEE_RENAMER_DLL_MDB=
+
+if ENABLE_TESTS
+ASSEMBLY_COMPILER_FLAGS += "-define:ENABLE_TESTS"
+endif
 
 endif
 
@@ -58,6 +66,11 @@ REFERENCES = $(BANSHEE_RENAMER_REFS)
 DLL_REFERENCES = 
 
 CLEANFILES = $(PROGRAMFILES) $(LINUX_PKGCONFIG) 
+
+if ENABLE_TESTS
+FILES += $(BANSHEE_RENAMER_TESTS)
+REFERENCES += $(BANSHEE_RENAMER_TEST_REFS)
+endif
 
 include $(top_srcdir)/Makefile.include
 

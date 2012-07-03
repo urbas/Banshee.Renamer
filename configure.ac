@@ -56,6 +56,10 @@ fi
 dnl package checks, common for all configs
 PKG_CHECK_MODULES([GTK_SHARP_20], [gtk-sharp-2.0])
 PKG_CHECK_MODULES([GTK_DOTNET_20], [gtk-dotnet-2.0])
+PKG_CHECK_MODULES([BANSHEE_CORE], [banshee-core >= 2.2.1])
+PKG_CHECK_MODULES([BANSHEE_SERVICES], [banshee-services >= 2.2.1])
+PKG_CHECK_MODULES([BANSHEE_THICKCLIENT], [banshee-thickclient >= 2.2.1])
+PKG_CHECK_MODULES([BANSHEE_HYENA], [banshee-hyena >= 2.2.1])
 
 dnl package checks, per config
 
