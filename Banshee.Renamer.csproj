@@ -1,0 +1,116 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProductVersion>9.0.21022</ProductVersion>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>{F7570E5E-831E-49CC-B8F6-B3C185E850DF}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <RootNamespace>Banshee.Renamer</RootNamespace>
+    <AssemblyName>Banshee.Renamer</AssemblyName>
+    <ReleaseVersion>1.3</ReleaseVersion>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug</OutputPath>
+    <DefineConstants>DEBUG;</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>none</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Release</OutputPath>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+    <ConsolePause>false</ConsolePause>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="System" />
+    <Reference Include="gtk-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f" />
+    <Reference Include="Mono.Posix" />
+    <Reference Include="gdk-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f" />
+    <Reference Include="gtk-dotnet, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="gtk-sharp-beans, Version=2.14.0.0, Culture=neutral, PublicKeyToken=97a95fb57b03c03a">
+      <Private>False</Private>
+    </Reference>
+    <Reference Include="pango-sharp, Version=2.12.0.0, Culture=neutral, PublicKeyToken=35e10195dab3c99f">
+      <Private>False</Private>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Banshee.Renamer\RenamerService.cs" />
+    <Compile Include="gtk-gui\generated.cs" />
+    <Compile Include="gtk-gui\Banshee.Renamer.RenamerWindow.cs" />
+    <Compile Include="Banshee.Renamer\RenamerWindow.cs" />
+    <Compile Include="Banshee.Renamer\TrackInfoParameterMap.cs" />
+    <Compile Include="Banshee.Renamer\SongFilenameTemplates.cs" />
+    <Compile Include="Banshee.Renamer\TemplateStorage.cs" />
+    <Compile Include="Banshee.Renamer\DbTrackFilenameEngineV1.cs" />
+    <Compile Include="Banshee.Renamer\RenamingProgressDialog.cs" />
+    <Compile Include="gtk-gui\Banshee.Renamer.RenamingProgressDialog.cs" />
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <ItemGroup>
+    <Folder Include="Banshee.Renamer\" />
+    <Folder Include="Resources\" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Makefile.am" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\..\Core\Banshee.Services\Banshee.Services.csproj">
+      <Project>{B28354F0-BA87-44E8-989F-B864A3C7C09F}</Project>
+      <Name>Banshee.Services</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Core\Banshee.ThickClient\Banshee.ThickClient.csproj">
+      <Project>{AC839523-7BDF-4AB6-8115-E17921B96EC6}</Project>
+      <Name>Banshee.ThickClient</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Core\Banshee.Core\Banshee.Core.csproj">
+      <Project>{2ADB831A-A050-47D0-B6B9-9C19D60233BB}</Project>
+      <Name>Banshee.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Hyena\Hyena\Hyena.csproj">
+      <Project>{95374549-9553-4C1E-9D89-667755F90E12}</Project>
+      <Name>Hyena</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\..\Libraries\TemplateSharp\src\TemplateSharp.csproj">
+      <Project>{D37CB841-7539-4BD2-94ED-9A3F7AF565C7}</Project>
+      <Name>TemplateSharp</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\RenamerActionsUI.xml">
+      <LogicalName>RenamerActionsUI.xml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="Banshee.Renamer.addin.xml">
+      <LogicalName>Banshee.Renamer.addin.xml</LogicalName>
+    </EmbeddedResource>
+    <EmbeddedResource Include="gtk-gui\gui.stetic">
+      <LogicalName>gui.stetic</LogicalName>
+    </EmbeddedResource>
+  </ItemGroup>
+  <Import Project="$(MSBuildBinPath)\Microsoft.CSharp.targets" />
+  <ProjectExtensions>
+    <MonoDevelop>
+      <Properties>
+        <MonoDevelop.Autotools.MakefileInfo IntegrationEnabled="true" RelativeMakefileName="Makefile.am">
+          <BuildFilesVar Sync="true" Name="SOURCES" />
+          <DeployFilesVar />
+          <ResourcesVar Sync="true" Name="RESOURCES" />
+          <OthersVar />
+          <GacRefVar />
+          <AsmRefVar />
+          <ProjectRefVar />
+        </MonoDevelop.Autotools.MakefileInfo>
+      </Properties>
+    </MonoDevelop>
+  </ProjectExtensions>
+</Project>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Addin 
+    id="Banshee.Renamer"
+    version="1.0"
+    compatVersion="1.0"
+    copyright="© 2012 Matej Urbas Inc. Licensed under the MIT X11 license."
+    name="Renamer"
+    category="File Management"
+    description="A Banshee extension that renames audio files en-masse based on their metadata."
+    author="Matej Urbas"
+    url="http://urbas.si/"
+    defaultEnabled="true">
+
+  <Dependencies>
+    <Addin id="Banshee.Services" version="1.0"/>
+    <Addin id="Banshee.ThickClient" version="1.0"/>
+  </Dependencies>
+
+  <Extension path="/Banshee/ServiceManager/Service">
+    <Service class="Banshee.Renamer.RenamerService"/>
+  </Extension>
+
+</Addin>
