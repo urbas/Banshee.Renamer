@@ -1,0 +1,7 @@
+#!/bin/bash
+
+TS_VERSION=$(cat configure.ac | perl -n -e '/AC_INIT\(\[banshee-renamer\], \[([0-9](\.[0-9])+)\]\)$/ && print $1')
+
+TS_RELEASE_TAG=release_$TS_VERSION
+
+git tag $TS_RELEASE_TAG
