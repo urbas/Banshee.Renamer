@@ -3,4 +3,4 @@ Description: Banshee extension for renaming song filenames in large quantities
 Version: @PACKAGE_VERSION@
 
 Requires: 
-Libs: -r:@expanded_libdir@/@PACKAGE@/Banshee.Renamer.dll
+Libs: -r:@expanded_libdir@/banshee/Banshee.Renamer.dll

@@ -37,6 +37,8 @@ endif
 
 endif
 
+include Banshee.Renamer.config
+
 AL=al
 SATELLITE_ASSEMBLY_NAME=$(notdir $(basename $(ASSEMBLY))).resources.dll
 
@@ -51,21 +53,22 @@ RESGEN=resgen2
 	
 all: $(ASSEMBLY) $(PROGRAMFILES) $(LINUX_PKGCONFIG) 
 
-include Banshee.Renamer.config
-
 FILES = $(BANSHEE_RENAMER_CS) 
+
+dist_doc_DATA = $(BANSHEE_RENAMER_MARKDOWNHTMLS)
 
 DATA_FILES = 
 
 RESOURCES = $(BANSHEE_RENAMER_RESOURCES)
 
-EXTRAS = $(BANSHEE_RENAMER_EXTRAS)
+EXTRAS = $(BANSHEE_RENAMER_EXTRAS) \
+    $(BANSHEE_RENAMER_MARKDOWNS)
 
 REFERENCES = $(BANSHEE_RENAMER_REFS)
 
 DLL_REFERENCES = 
 
-CLEANFILES = $(PROGRAMFILES) $(LINUX_PKGCONFIG) 
+CLEANFILES = $(PROGRAMFILES) $(LINUX_PKGCONFIG) $(BANSHEE_RENAMER_MARKDOWNHTMLS)
 
 if ENABLE_TESTS
 FILES += $(BANSHEE_RENAMER_TESTS)
@@ -74,9 +77,9 @@ endif
 
 include $(top_srcdir)/Makefile.include
 
-BANSHEE_RENAMER_PC = $(BUILD_DIR)/banshee.renamer.pc
+BANSHEE_RENAMER_PC = $(BUILD_DIR)/banshee-renamer.pc
 
-$(eval $(call emit-deploy-wrapper,BANSHEE_RENAMER_PC,banshee.renamer.pc))
+$(eval $(call emit-deploy-wrapper,BANSHEE_RENAMER_PC,banshee-renamer.pc))
 
 
 $(eval $(call emit_resgen_targets))
@@ -93,3 +96,6 @@ if ENABLE_TESTS
 test: $(ASSEMBLY)
 	nunit-console $(ASSEMBLY)
 endif
+
+.md.html:
+	markdown $< > $@
