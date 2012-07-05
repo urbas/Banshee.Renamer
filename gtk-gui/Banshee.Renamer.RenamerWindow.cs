@@ -29,7 +29,7 @@ namespace Banshee.Renamer
 		private global::Gtk.Fixed fixed2;
 		private global::Gtk.Button btnRename;
 		private global::Gtk.Button btnClose;
-        
+		
 		protected virtual void Build ()
 		{
 			global::Stetic.Gui.Initialize (this);

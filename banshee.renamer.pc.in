@@ -1,6 +1,0 @@
-Name: Banshee.Renamer
-Description: Banshee.Renamer
-Version: 1.0.0
-
-Requires: 
-Libs: -r:@expanded_libdir@/@PACKAGE@/Banshee.Renamer.dll

@@ -17,7 +17,7 @@ namespace Banshee.Renamer
 		private global::Gtk.Label lblOriginalFilenameTitle;
 		private global::Gtk.Button buttonCancel;
 		private global::Gtk.Button buttonOk;
-        
+		
 		protected virtual void Build ()
 		{
 			global::Stetic.Gui.Initialize (this);

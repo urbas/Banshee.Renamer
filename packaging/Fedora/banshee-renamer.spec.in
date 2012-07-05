@@ -1,0 +1,40 @@
+Name:           banshee-renamer
+Version:        @PACKAGE_VERSION@
+Release:        1%{?dist}
+Summary:        Banshee extension for renaming song filenames in large quantities
+Group:          Applications/Multimedia
+License:        MIT
+URL:            https://github.com/urbas/Banshee.Renamer
+Source0:        https://github.com/urbas/Banshee.Renamer/%{name}-%{version}.tar.gz
+BuildRoot:      %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+BuildRequires:  mono-devel python-markdown
+ExclusiveArch:  %ix86 x86_64 ppc ppc64 ia64 %{arm} sparcv9 alpha s390x
+%description
+Banshee.Renamer is an extension for Banshee. It renames files of selected songs
+using templates filled with the songs' metadata.
+
+
+
+%prep
+%setup -q
+
+%build
+%configure --enable-debug
+make
+
+%install
+%{__rm} -rf %{buildroot}
+make DESTDIR=%{buildroot} install
+
+%clean
+%{__rm} -rf %{buildroot}
+
+%files
+%defattr(-,root,root,-)
+%{_libdir}/banshee/
+%defattr(-,root,root,-)
+%doc %{_defaultdocdir}/%{name}/README.html
+
+%changelog
+* Thu Jul 5 2012 Matej Urbas <matej.urbas@gmail.com> - 1.0.2-1
+- Initial package

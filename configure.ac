@@ -1,7 +1,7 @@
 dnl Warning: This is an automatically generated file, do not edit!
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.54])
-AC_INIT([Banshee.Renamer], [0.1])
+AC_INIT([banshee-renamer], [0.1])
 AM_INIT_AUTOMAKE([foreign])
 AM_MAINTAINER_MODE
 
@@ -17,9 +17,14 @@ SHAMROCK_EXPAND_DATADIR
 
 AC_PROG_INSTALL
 
+AC_PATH_PROG(MARKDOWN, markdown, no)
+if test "x$MARKDOWN" = "xno"; then
+        AC_MSG_ERROR([markdown not found])
+fi
+
 AC_PATH_PROG(DMCS, dmcs, no)
 if test "x$DMCS" = "xno"; then
-        AC_MSG_ERROR([dmcs Not found])
+        AC_MSG_ERROR([dmcs not found])
 fi
 
 
@@ -54,12 +59,15 @@ fi
 
 
 dnl package checks, common for all configs
+PKG_CHECK_MODULES([MONO], [mono >= 2.10.5])
+PKG_CHECK_MODULES([DOTNET35], [dotnet35 >= 2.10.5])
 PKG_CHECK_MODULES([GTK_SHARP_20], [gtk-sharp-2.0])
 PKG_CHECK_MODULES([GTK_DOTNET_20], [gtk-dotnet-2.0])
 PKG_CHECK_MODULES([BANSHEE_CORE], [banshee-core >= 2.2.1])
 PKG_CHECK_MODULES([BANSHEE_SERVICES], [banshee-services >= 2.2.1])
 PKG_CHECK_MODULES([BANSHEE_THICKCLIENT], [banshee-thickclient >= 2.2.1])
 PKG_CHECK_MODULES([BANSHEE_HYENA], [banshee-hyena >= 2.2.1])
+PKG_CHECK_MODULES([TEMPLATE_SHARP], [template-sharp >= 1.0.2])
 
 dnl package checks, per config
 
@@ -70,8 +78,10 @@ fi
 
 
 AC_CONFIG_FILES([
-banshee.renamer.pc
+banshee-renamer.pc
 Makefile
+AssemblyInfo.cs
+packaging/Fedora/banshee-renamer.spec
 ])
 
 AC_OUTPUT

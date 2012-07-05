@@ -96,6 +96,6 @@
     <None Include="Makefile.am" />
     <None Include="configure.ac" />
     <None Include="Makefile.include" />
-    <None Include="banshee.renamer.pc.in" />
+    <None Include="banshee-renamer.pc.in" />
   </ItemGroup>
 </Project>
