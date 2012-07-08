@@ -29,6 +29,7 @@ using System.Collections.Generic;
 using Banshee.Collection.Database;
 using Mono.Unix;
 using Template.Text;
+using Hyena;
 
 namespace Banshee.Renamer
 {
@@ -59,12 +60,20 @@ namespace Banshee.Renamer
         private static Dictionary<string, string> parameterDescriptions = new Dictionary<string, string>();
         private static Dictionary<string, Lookup<DatabaseTrackInfo>> parameterMaps = new Dictionary<string, Lookup<DatabaseTrackInfo>>();
 
+        static string SomeOrNull(this string str)
+        {
+            if (str == null)
+                return null;
+            str = str.Trim();
+            return str.Length == 0 ? null : str;
+        }
+
         static TrackInfoParameterMap() {
             // Add all parameters:
-            AddParameter("artist", Catalog.GetString("The artist of the song."), s => s.DisplayArtistName);
-            AddParameter("album artist", Catalog.GetString("The artist of the song's album."), s => s.DisplayAlbumArtistName);
-            AddParameter("title", Catalog.GetString("The song's title."), s => s.DisplayTrackTitle);
-            AddParameter("album", Catalog.GetString("The album of the song."), s => s.DisplayAlbumTitle);
+            AddParameter("artist", Catalog.GetString("The artist of the song."), s => s.ArtistName.SomeOrNull());
+            AddParameter("album artist", Catalog.GetString("The artist of the song's album."), s => s.AlbumArtist.SomeOrNull());
+            AddParameter("title", Catalog.GetString("The song's title."), s => s.TrackTitle.SomeOrNull());
+            AddParameter("album", Catalog.GetString("The album of the song."), s => s.AlbumTitle.SomeOrNull());
             AddParameter("track number", Catalog.GetString("The song's track number (position in the album)."), s => s.TrackNumber > 0 ? (object)s.TrackNumber : null);
             AddParameter("track count", Catalog.GetString("The number of songs in the song's album."), s => s.TrackCount > 0 ? (object)s.TrackCount : null);
             AddParameter("disc number", Catalog.GetString("The number of the disc of this song."), s => s.DiscNumber > 0 ? (object)s.DiscNumber : null);
@@ -73,7 +82,7 @@ namespace Banshee.Renamer
             AddParameter("copyright", Catalog.GetString("Song's copyright notice."), s => s.Copyright);
             AddParameter("composer", Catalog.GetString("The composer of the song."), s => s.Composer);
             AddParameter("conductor", Catalog.GetString("The conductor of the song."), s => s.Conductor);
-            AddParameter("genre", Catalog.GetString("The genre of the song."), s => s.DisplayGenre);
+            AddParameter("genre", Catalog.GetString("The genre of the song."), s => s.Genre.SomeOrNull());
             AddParameter("uri", Catalog.GetString("The song's uri."), s => s.Uri);
             AddParameter("year", Catalog.GetString("The song's release year."), s => s.Year > 0 ? (object)s.Year : null);
             AddParameter("extension", Catalog.GetString("The song's filename extension."), s => s.LocalPath == null ? null : System.IO.Path.GetExtension(s.LocalPath));

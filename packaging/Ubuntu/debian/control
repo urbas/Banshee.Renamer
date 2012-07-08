@@ -1,0 +1,20 @@
+Source:             banshee-renamer
+Section:            cli-mono
+Priority:           extra
+Maintainer:         Matej Urbas <matej.urbas@gmail.com>
+Build-Depends:      debhelper (>= 8.0.0),
+                    autotools-dev,
+                    mono-devel (>= 2.10.8.1),
+                    markdown
+Standards-Version:  3.9.2
+Homepage:           https://github.com/urbas/Banshee.Renamer
+Vcs-Browser:        https://github.com/urbas/Banshee.Renamer
+Vcs-Git:            git://github.com/urbas/Banshee.Renamer.git
+
+Package:            banshee-renamer
+Architecture:       any
+Depends:            ${cli:Depends},
+                    ${misc:Depends}
+Description:        Banshee extension for renaming song file-names in large quantities
+ Banshee.Renamer is an extension for Banshee. It renames files of selected songs
+ using templates filled with the songs' meta-data.
