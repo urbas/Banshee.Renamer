@@ -217,6 +217,7 @@ namespace Banshee.Renamer
 			this.btnDonate.CanFocus = true;
 			this.btnDonate.Name = "btnDonate";
 			this.btnDonate.UseUnderline = true;
+			this.btnDonate.FocusOnClick = false;
 			this.btnDonate.Label = global::Mono.Unix.Catalog.GetString ("Donate?  :)");
 			this.hlayoutButtons.Add (this.btnDonate);
 			global::Gtk.Box.BoxChild w20 = ((global::Gtk.Box.BoxChild)(this.hlayoutButtons [this.btnDonate]));
