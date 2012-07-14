@@ -29,6 +29,7 @@ using System.Collections.Generic;
 using System.Text;
 using Template.Text;
 using Banshee.Collection.Database;
+using System.Diagnostics;
 
 namespace Banshee.Renamer
 {
@@ -60,6 +61,10 @@ namespace Banshee.Renamer
             // Set a monotype and small font for the guide:
             lblHelp.ModifyFont (Pango.FontDescription.FromString ("monospace 8"));
 
+            // Make the donate button appear as a link:
+            // <span  foreground="#0000ff"><u><i>Donate?</i></u>  :)</span>
+//            btnDonate.ModifyFg(Gtk.StateType.Normal, new Gdk.Color(0,0, 0xff));
+
             // Load all the stored patterns (from the persistent configuration):
             RefillStoredTemplatesStore ();
 
@@ -80,6 +85,7 @@ namespace Banshee.Renamer
             btnClose.Clicked += OnButtonCloseClicked;
             btnGenerate.Clicked += OnButtonGenerateClicked;
             btnRename.Clicked += OnButtonRenameClicked;
+            btnDonate.Clicked += OnDonateButtonPressed;
         }
         #endregion
 
@@ -144,6 +150,11 @@ namespace Banshee.Renamer
                 Gtk.MessageDialog mdialog = new Gtk.MessageDialog(this, Gtk.DialogFlags.Modal, Gtk.MessageType.Error, Gtk.ButtonsType.Close, Catalog.GetString("Could not start renaming the files. The current template is not valid.\n\nPlease fix the filename template first."));
                 mdialog.Show();
             }
+        }
+
+        private void OnDonateButtonPressed(object source, EventArgs args)
+        {
+            Process.Start("https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=FN5QV5YHS5G5N");
         }
 
         /// <summary>

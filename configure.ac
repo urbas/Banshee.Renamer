@@ -1,7 +1,7 @@
 dnl Warning: This is an automatically generated file, do not edit!
 dnl Process this file with autoconf to produce a configure script.
 AC_PREREQ([2.54])
-AC_INIT([banshee-renamer], [1.0.3])
+AC_INIT([banshee-renamer], [1.0.4])
 AM_INIT_AUTOMAKE([foreign])
 AM_MAINTAINER_MODE
 
@@ -20,13 +20,14 @@ AC_PROG_INSTALL
 
 
 # Find the markdown compiler:
-AC_ARG_VAR(MARKDOWN, [The program with which to build the README.md documentation [default=markdown_py]])
+AC_ARG_VAR(MARKDOWN, [The program with which to build the README.md documentation])
 if test -z $MARKDOWN; then
-    MARKDOWN=markdown_py
+    AC_PATH_PROGS(MARKDOWN, [markdown markdown_py markdown2], no)
+else
+    AC_PATH_PROG(MARKDOWN, $MARKDOWN, no)
 fi
-AC_PATH_PROG(MARKDOWN_FOUND, $MARKDOWN, no)
-if test "x$MARKDOWN_FOUND" = "xno"; then
-        AC_MSG_ERROR([markdown not found])
+if test "x$MARKDOWN" = "xno"; then
+    AC_MSG_ERROR([markdown not found])
 fi
 
 
@@ -45,32 +46,32 @@ fi
 
 # Determine which configuration we should use:
 AC_ARG_ENABLE(debug,
-	AC_HELP_STRING([--enable-debug],
-		[Use 'DEBUG' Configuration [default=YES]]),
-		enable_debug=yes, enable_debug=no)
+    AC_HELP_STRING([--enable-debug],
+        [Use 'DEBUG' Configuration [default=YES]]),
+        enable_debug=yes, enable_debug=no)
 AM_CONDITIONAL(ENABLE_DEBUG, test x$enable_debug = xyes)
 if test "x$enable_debug" = "xyes" ; then
-	CONFIG_REQUESTED="yes"
+    CONFIG_REQUESTED="yes"
 fi
 
 AC_ARG_ENABLE(release,
-	AC_HELP_STRING([--enable-release],
-		[Use 'RELEASE' Configuration [default=NO]]),
-		enable_release=yes, enable_release=no)
+    AC_HELP_STRING([--enable-release],
+        [Use 'RELEASE' Configuration [default=NO]]),
+        enable_release=yes, enable_release=no)
 AM_CONDITIONAL(ENABLE_RELEASE, test x$enable_release = xyes)
 
 AC_ARG_ENABLE(tests,
-	AC_HELP_STRING([--enable-tests],
-		[Build NUnit tests into the assembly. [default=NO]]),
-		enable_tests=yes, enable_tests=no)
+    AC_HELP_STRING([--enable-tests],
+        [Build NUnit tests into the assembly. [default=NO]]),
+        enable_tests=yes, enable_tests=no)
 AM_CONDITIONAL(ENABLE_TESTS, test x$enable_tests = xyes)
 
 if test "x$enable_release" = "xyes" ; then
-	CONFIG_REQUESTED="yes"
+    CONFIG_REQUESTED="yes"
 fi
 if test -z "$CONFIG_REQUESTED" ; then
-	AM_CONDITIONAL(ENABLE_DEBUG, true)
-	enable_debug=yes
+    AM_CONDITIONAL(ENABLE_DEBUG, true)
+    enable_debug=yes
 fi
 
 
@@ -84,7 +85,7 @@ PKG_CHECK_MODULES([BANSHEE_CORE], [banshee-core >= 2.2.1])
 PKG_CHECK_MODULES([BANSHEE_SERVICES], [banshee-services >= 2.2.1])
 PKG_CHECK_MODULES([BANSHEE_THICKCLIENT], [banshee-thickclient >= 2.2.1])
 PKG_CHECK_MODULES([BANSHEE_HYENA], [banshee-hyena >= 2.2.1])
-PKG_CHECK_MODULES([TEMPLATE_SHARP], [template-sharp >= 1.0.2])
+PKG_CHECK_MODULES([TEMPLATE_SHARP], [template-sharp >= 1.0.4])
 
 
 
@@ -94,7 +95,7 @@ dnl package checks, per config
 
 dnl Checks for TESTS:
 if test "x$enable_tests" = "xyes" ; then
-	PKG_CHECK_MODULES([NUNIT],[mono-nunit >= 2.10.0])
+    PKG_CHECK_MODULES([NUNIT],[mono-nunit >= 2.5.0])
 fi
 
 

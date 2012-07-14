@@ -26,10 +26,10 @@ namespace Banshee.Renamer
 		private global::Gtk.Label GtkLabel5;
 		private global::Gtk.HBox hlayoutButtons;
 		private global::Gtk.Button btnGenerate;
-		private global::Gtk.Fixed fixed2;
+		private global::Gtk.Button btnDonate;
 		private global::Gtk.Button btnRename;
 		private global::Gtk.Button btnClose;
-		
+        
 		protected virtual void Build ()
 		{
 			global::Stetic.Gui.Initialize (this);
@@ -213,12 +213,16 @@ namespace Banshee.Renamer
 			w19.Expand = false;
 			w19.Fill = false;
 			// Container child hlayoutButtons.Gtk.Box+BoxChild
-			this.fixed2 = new global::Gtk.Fixed ();
-			this.fixed2.Name = "fixed2";
-			this.fixed2.HasWindow = false;
-			this.hlayoutButtons.Add (this.fixed2);
-			global::Gtk.Box.BoxChild w20 = ((global::Gtk.Box.BoxChild)(this.hlayoutButtons [this.fixed2]));
+			this.btnDonate = new global::Gtk.Button ();
+			this.btnDonate.CanFocus = true;
+			this.btnDonate.Name = "btnDonate";
+			this.btnDonate.UseUnderline = true;
+			this.btnDonate.FocusOnClick = false;
+			this.btnDonate.Label = global::Mono.Unix.Catalog.GetString ("Donate?  :)");
+			this.hlayoutButtons.Add (this.btnDonate);
+			global::Gtk.Box.BoxChild w20 = ((global::Gtk.Box.BoxChild)(this.hlayoutButtons [this.btnDonate]));
 			w20.Position = 1;
+			w20.Fill = false;
 			// Container child hlayoutButtons.Gtk.Box+BoxChild
 			this.btnRename = new global::Gtk.Button ();
 			this.btnRename.CanFocus = true;
@@ -267,7 +271,7 @@ namespace Banshee.Renamer
 			if ((this.Child != null)) {
 				this.Child.ShowAll ();
 			}
-			this.DefaultWidth = 503;
+			this.DefaultWidth = 742;
 			this.DefaultHeight = 576;
 			this.Show ();
 			this.entryPattern.Changed += new global::System.EventHandler (this.OnPatternChanged);

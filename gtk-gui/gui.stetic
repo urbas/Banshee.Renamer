@@ -5,10 +5,10 @@
     <target-gtk-version>2.12</target-gtk-version>
   </configuration>
   <import>
-    <widget-library name="../../../../bin/Banshee.ThickClient.dll" />
-    <widget-library name="../bin/Debug/Banshee.Renamer.dll" internal="true" />
+    <widget-library name="../../banshee/bin/Banshee.ThickClient.dll" />
+    <widget-library name="../../banshee/bin/Banshee.Renamer.dll" internal="true" />
   </import>
-  <widget class="Gtk.Window" id="Banshee.Renamer.RenamerWindow" design-size="503 576">
+  <widget class="Gtk.Window" id="Banshee.Renamer.RenamerWindow" design-size="742 576">
     <property name="MemberName" />
     <property name="Title" translatable="yes">Renamer</property>
     <property name="WindowPosition">CenterOnParent</property>
@@ -291,13 +291,18 @@
               </packing>
             </child>
             <child>
-              <widget class="Gtk.Fixed" id="fixed2">
+              <widget class="Gtk.Button" id="btnDonate">
                 <property name="MemberName" />
-                <property name="HasWindow">False</property>
+                <property name="CanFocus">True</property>
+                <property name="Type">TextOnly</property>
+                <property name="Label" translatable="yes">Donate?  :)</property>
+                <property name="UseUnderline">True</property>
+                <property name="FocusOnClick">False</property>
               </widget>
               <packing>
                 <property name="Position">1</property>
-                <property name="AutoSize">True</property>
+                <property name="AutoSize">False</property>
+                <property name="Fill">False</property>
               </packing>
             </child>
             <child>
